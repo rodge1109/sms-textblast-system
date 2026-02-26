@@ -1,10 +1,9 @@
-﻿import express from 'express';
+import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
 import productsRoutes from './routes/products.js';
 import ordersRoutes from './routes/orders.js';
 import customersRoutes from './routes/customers.js';
@@ -20,6 +19,7 @@ import sheetsRoutes from './routes/sheets.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
@@ -28,16 +28,15 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    // Allow localhost on any port for development
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true);
     }
-    callback(null, true); // Allow all origins in development
+    callback(null, true);
   },
   credentials: true
 }));
+
 app.use(express.json());
 
 // Session middleware
@@ -47,14 +46,14 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Set to true in production with HTTPS
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'lax',
     maxAge: 8 * 60 * 60 * 1000 // 8 hours
   }
 }));
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/orders', ordersRoutes);
@@ -73,6 +72,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
+// Serve React frontend static files
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Catch-all route — serve React app for any non-API route
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -89,17 +96,5 @@ process.on('unhandledRejection', (reason) => {
 });
 
 server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.warn(`Port ${PORT} in use — killing old process and retrying...`);
-    try {
-      execSync(
-        `powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort ${PORT} -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id \\$_ -Force -ErrorAction SilentlyContinue }"`,
-        { stdio: 'ignore' }
-      );
-    } catch { /* ignore */ }
-    setTimeout(() => server.listen(PORT), 1000);
-  } else {
-    console.error('HTTP server error:', err);
-  }
+  console.error('HTTP server error:', err);
 });
-
