@@ -1,0 +1,295 @@
+[
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-26T15:17:44.264Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T17:51:57.307Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T16:58:13.864Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Unknown",
+    "logCode": "Logout",
+    "created": "2026-02-24T16:58:11.996Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T16:00:17.127Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T15:57:07.082Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Unknown",
+    "logCode": "Logout",
+    "created": "2026-02-24T15:57:05.181Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T13:01:31.105Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T09:30:34.204Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T09:16:01.457Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-24T07:23:15.619Z",
+    "sent": 1,
+    "failed": 0
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T07:13:03.466Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Logout",
+    "created": "2026-02-24T07:11:36.499Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T07:11:29.929Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T04:48:44.574Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T01:46:40.330Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Logout",
+    "created": "2026-02-24T01:46:38.542Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T01:44:11.456Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T01:36:21.921Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Unknown",
+    "logCode": "Logout",
+    "created": "2026-02-24T01:36:19.884Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T01:35:30.441Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Unknown",
+    "logCode": "Logout",
+    "created": "2026-02-24T01:35:28.167Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T01:34:05.273Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Unknown",
+    "logCode": "Logout",
+    "created": "2026-02-24T01:34:03.269Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T01:27:48.469Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T01:20:09.406Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T00:54:49.449Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "type": "activity",
+    "user": "Administrator",
+    "logCode": "Login",
+    "created": "2026-02-24T00:46:02.208Z",
+    "sent": null,
+    "failed": null
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-23T17:58:04.273Z",
+    "sent": 1,
+    "failed": 0
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-23T12:08:26.004Z",
+    "sent": 1,
+    "failed": 0
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-23T12:07:59.964Z",
+    "sent": 1,
+    "failed": 0
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-23T12:06:50.955Z",
+    "sent": 1,
+    "failed": 0
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-23T12:06:25.022Z",
+    "sent": 1,
+    "failed": 0
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-23T12:05:54.138Z",
+    "sent": 1,
+    "failed": 0
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-23T12:05:25.523Z",
+    "sent": 1,
+    "failed": 0
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-23T12:00:37.506Z",
+    "sent": 1,
+    "failed": 0
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-23T12:00:29.436Z",
+    "sent": 1,
+    "failed": 0
+  },
+  {
+    "user": "System",
+    "logCode": "Advisory",
+    "created": "2026-02-23T11:53:08.229Z",
+    "sent": 1,
+    "failed": 0
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "watch": ["server"],
+  "ext": "js,mjs,cjs,json",
+  "ignore": ["server/sms-logs.json", "server/sms-templates.json", "server/init-chatbot-sheet.js"],
+  "delay": 500
+}

@@ -1,0 +1,6 @@
+{
+  "billTpl": "BogoWD(free,no reply): Your bill (Conscode: {conscode}) for THIS MONTH is {totalAmount}. Consumption: {consumption} cubic meter. Due Date: {dueDate}. Disconnection Date: {disconDate}. Please pay on time. Thank you.",
+  "dueTpl": "Dear {name}, this is a reminder that your water bill is due on {date}. Water Fee: Php {waterFee}. Installation Fee: Php {installFee}. Meter Maintenance: Php {meterMaint}. Total Amount Due: Php {totalAmount}. Please pay on time to avoid disconnection. Thank you.",
+  "discTpl": "Dear {name}, your account is scheduled for disconnection on {date} due to unpaid balance. Water Fee: Php {waterFee}. Installation Fee: Php {installFee}. Meter Maintenance Fee: Php {meterMaint}. Penalty: Php {penalty}. Total Amount Due: Php {totalAmount}. Please settle immediately. Thank you.",
+  "advTpl": "Dear {name}, this is an advisory from BogoWD. {advisory} For inquiries, please contact our office. Thank you."
+}
