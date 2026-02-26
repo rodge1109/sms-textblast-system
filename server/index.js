@@ -76,7 +76,7 @@ app.get('/api/health', (req, res) => {
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // Catch-all route — serve React app for any non-API route
-app.get('*', (req, res) => {
+app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
