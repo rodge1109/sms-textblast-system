@@ -171,17 +171,12 @@ router.post('/change-password', async (req, res) => {
   }
 });
 
-// GET /api/auth/employees - Get all employees (admin only)
+// GET /api/auth/employees - Get all employees
 router.get('/employees', async (req, res) => {
   try {
-    const emp = getEmployee(req);
-    if (!emp) return res.status(401).json({ success: false, error: 'Not logged in' });
-    if (emp.role !== 'admin') return res.status(403).json({ success: false, error: 'Admin access required' });
-
     const result = await pool.query(
       'SELECT id, username, name, email, role, active, created_at FROM employees ORDER BY name'
     );
-
     res.json({ success: true, employees: result.rows });
   } catch (error) {
     console.error('Error fetching employees:', error);
