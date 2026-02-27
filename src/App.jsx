@@ -40,7 +40,10 @@ const useCart = () => {
 };
 
 // API URL - Backend server
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : `${window.location.origin}/api`);
 
 // Fallback Menu Data (used if Google Sheets fetch fails)
 const fallbackMenuData = [
