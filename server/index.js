@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -39,8 +40,15 @@ app.use(cors({
 
 app.use(express.json());
 
-// Session middleware
+// Session middleware (persistent store in Supabase)
+const PgSession = connectPgSimple(session);
 app.use(session({
+  store: new PgSession({
+    conString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    tableName: 'session',
+    createTableIfMissing: false,
+  }),
   name: 'pos_session',
   secret: process.env.SESSION_SECRET || 'restaurant-pos-secret-key-change-in-production',
   resave: false,
