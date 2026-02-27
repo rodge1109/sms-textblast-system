@@ -57,10 +57,14 @@ router.post('/login', async (req, res) => {
       role: employee.role
     };
 
-    writeActivityLog(employee.name, 'Login');
-    res.json({
-      success: true,
-      employee: req.session.employee
+    // Force session save before responding so it's in DB for next request
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).json({ success: false, error: 'Session save failed: ' + err.message });
+      }
+      writeActivityLog(employee.name, 'Login');
+      res.json({ success: true, employee: req.session.employee });
     });
   } catch (error) {
     console.error('Login error:', error);
