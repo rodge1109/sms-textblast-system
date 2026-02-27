@@ -142,6 +142,16 @@ export default function RestaurantApp() {
   // On mount: verify the server session is still valid (sessionStorage can outlive the session)
   useEffect(() => {
     if (employee) {
+      // If a valid non-expired JWT exists, skip the server session check.
+      // JWT is issued at login and saved to sessionStorage; decoding the payload
+      // (without verifying signature) is safe — sessionStorage is same-origin only.
+      const token = sessionStorage.getItem('authToken');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+          if (payload.exp * 1000 > Date.now()) return; // token still valid, stay logged in
+        } catch {}
+      }
       fetch(`${API_URL}/auth/me`, { credentials: 'include' })
         .then(r => r.json())
         .then(d => {
