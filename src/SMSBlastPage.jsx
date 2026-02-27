@@ -792,7 +792,7 @@ function ToolsContent() {
   }
 
   // â”€â”€ Shared input styles â”€â”€
-  const inputCls  = 'border border-gray-300 rounded px-2 py-1 text-sm w-full focus:outline-none focus:border-blue-400';
+  const inputCls  = 'border border-gray-300 rounded px-2 py-1 text-[16px] w-full focus:outline-none focus:border-blue-400';
   const btnCls    = 'bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-1.5 rounded transition-colors disabled:opacity-50';
   const sectionHd = 'bg-gray-200 border border-gray-300 px-3 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wide';
   const cellCls   = 'border border-gray-300 px-4 py-3 align-top bg-gray-50';
@@ -807,7 +807,7 @@ function ToolsContent() {
           onClick={() => setShowTpl(v => !v)}
         >
           <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">SMS Message Templates</span>
-          <span className="text-gray-500 text-xs">{showTpl ? 'â–² Hide' : 'â–¼ Configure'}</span>
+          <span className="text-gray-500 text-xs">{showTpl ? '▲ Hide' : '▼ Configure'}</span>
         </button>
 
         {showTpl && (
@@ -917,11 +917,9 @@ function ToolsContent() {
       {/* â”€â”€ TOOLS â”€â”€ */}
       <div className="border border-gray-300 rounded overflow-hidden">
         <div className={sectionHd}>Tools</div>
-        <table className="w-full border-collapse">
-          <tbody>
-            <tr>
+        <div className="flex flex-col md:flex-row">
               {/* Left: Consumer Masterlist */}
-              <td className={`${cellCls} w-1/2`}>
+              <div className={`${cellCls} md:w-1/2`}>
                 <p className="font-bold text-gray-600 border-b border-gray-300 pb-1 mb-3 text-xs uppercase tracking-wide">
                   Consumers Settings Upload
                 </p>
@@ -931,7 +929,7 @@ function ToolsContent() {
                     <input
                       ref={masterlistRef}
                       type="file" accept=".csv"
-                      className="text-xs text-gray-600 file:mr-2 file:py-1 file:px-3 file:border file:border-gray-300 file:rounded file:text-xs file:bg-white file:cursor-pointer cursor-pointer"
+                      className="text-[16px] text-gray-600 file:mr-2 file:py-1 file:px-3 file:border file:border-gray-300 file:rounded file:text-[16px] file:bg-white file:cursor-pointer cursor-pointer"
                       onChange={e => { setMasterlistFile(e.target.files[0] || null); setMasterlistStatus(null); }}
                     />
                   </div>
@@ -948,10 +946,10 @@ function ToolsContent() {
                     </p>
                   )}
                 </div>
-              </td>
+              </div>
 
               {/* Right: Monthly Bill Upload */}
-              <td className={`${cellCls} w-1/2`}>
+              <div className={`${cellCls} md:w-1/2`}>
                 <p className="font-bold text-gray-600 border-b border-gray-300 pb-1 mb-3 text-xs uppercase tracking-wide">
                   Monthly Bill Upload
                 </p>
@@ -965,8 +963,8 @@ function ToolsContent() {
                     ['Due Date',           dueDate,     setDueDate],
                     ['Disconnection Date', disconDate,  setDisconDate],
                   ].map(([label, val, set]) => (
-                    <div key={label} className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600 w-36 shrink-0">{label}</span>
+                    <div key={label} className="flex flex-col gap-0.5">
+                      <span className="text-xs text-gray-600">{label}</span>
                       <input type="date" value={val}
                         onChange={e => set(e.target.value)}
                         className={inputCls}
@@ -974,8 +972,8 @@ function ToolsContent() {
                     </div>
                   ))}
 
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-xs text-gray-600 w-36 shrink-0">SMS Only</span>
+                  <div className="flex flex-col gap-0.5 pt-1">
+                    <span className="text-xs text-gray-600">SMS Only</span>
                     <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-600">
                       <input type="checkbox" checked={smsOnly} onChange={e => setSmsOnly(e.target.checked)}
                         className="w-3.5 h-3.5 accent-blue-600"
@@ -989,7 +987,7 @@ function ToolsContent() {
                     <input
                       ref={billsRef}
                       type="file" accept=".csv" multiple
-                      className="text-xs text-gray-600 file:mr-2 file:py-1 file:px-3 file:border file:border-gray-300 file:rounded file:text-xs file:bg-white file:cursor-pointer cursor-pointer"
+                      className="text-[16px] text-gray-600 file:mr-2 file:py-1 file:px-3 file:border file:border-gray-300 file:rounded file:text-[16px] file:bg-white file:cursor-pointer cursor-pointer"
                       onChange={e => {
                         const newFiles = Array.from(e.target.files);
                         setBillsFiles(prev => {
@@ -1026,10 +1024,8 @@ function ToolsContent() {
 
                   <StatusBadge message={billsStatus?.msg} type={billsStatus?.type} />
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+        </div>
       </div>
 
       {/* Bills Preview Table */}
@@ -1096,10 +1092,10 @@ function ToolsContent() {
         <div className="p-4 space-y-3">
           <p className="text-xs text-gray-500">Send Due Date and Disconnection Date SMS</p>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600 w-52 shrink-0">Type of Notification</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-gray-600">Type of Notification</span>
             <select value={notifType} onChange={e => { setNotifType(e.target.value); setBroadcastPreview(null); setBroadcastSendStatus(null); }}
-              className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400 w-44">
+              className="border border-gray-300 rounded px-2 py-1 text-[16px] focus:outline-none focus:border-blue-400 w-full">
               <option>Due Date</option>
               <option>Disconnection Date</option>
               <option>Advisory</option>
@@ -1107,20 +1103,20 @@ function ToolsContent() {
           </div>
 
           {notifType !== 'Advisory' && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600 w-52 shrink-0">Reference Due/Disconnection Date</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-gray-600">Reference Due/Disconnection Date</span>
               <input type="date" value={refDate} onChange={e => { setRefDate(e.target.value); setBroadcastPreview(null); setBroadcastSendStatus(null); }}
-                className="border border-gray-300 rounded px-2 py-1 text-xs w-44 focus:outline-none focus:border-blue-400" />
+                className="border border-gray-300 rounded px-2 py-1 text-[16px] w-full focus:outline-none focus:border-blue-400" />
             </div>
           )}
 
           {notifType !== 'Advisory' && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600 w-52 shrink-0">CSV File</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-gray-600">CSV File</span>
               <input
                 ref={broadcastRef}
                 type="file" accept=".csv"
-                className="text-xs text-gray-600 file:mr-2 file:py-1 file:px-3 file:border file:border-gray-300 file:rounded file:text-xs file:bg-white file:cursor-pointer cursor-pointer"
+                className="text-[16px] text-gray-600 file:mr-2 file:py-1 file:px-3 file:border file:border-gray-300 file:rounded file:text-[16px] file:bg-white file:cursor-pointer cursor-pointer"
                 onChange={e => { setBroadcastFile(e.target.files[0] || null); setBroadcastStatus(null); setBroadcastPreview(null); setBroadcastSendStatus(null); }}
               />
             </div>
@@ -1130,9 +1126,9 @@ function ToolsContent() {
             <p className="text-xs text-blue-600">Will send to all {masterlist.length} consumers in the loaded masterlist.</p>
           )}
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600 w-52 shrink-0">Preview Messages</span>
-            <button className={btnCls} onClick={handleBroadcast} disabled={broadcastProcessing}>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-gray-600">Preview Messages</span>
+            <button className={`${btnCls} self-start`} onClick={handleBroadcast} disabled={broadcastProcessing}>
               {broadcastProcessing ? 'PROCESSING…' : 'CONTINUE'}
             </button>
           </div>
@@ -1627,14 +1623,14 @@ export default function SMSBlastPage({ employee, authToken }) {
   return (
     <div className="flex h-full">
       {/* Sidebar */}
-      <aside className="flex flex-col items-center w-[280px] bg-gray-900 border-r border-gray-700 shrink-0 py-4 gap-1">
+      <aside className="flex flex-col items-center w-[100px] md:w-[280px] bg-gray-900 border-r border-gray-700 shrink-0 py-4 gap-1">
         {menuItems.map(({ id, label, icon: Icon }) => {
           const isActive = activeMenu === id;
           return (
             <button
               key={id}
               onClick={() => setActiveMenu(id)}
-              className={`relative flex flex-col items-center justify-center w-[248px] h-16 rounded-xl gap-1 transition-all duration-150
+              className={`relative flex flex-col items-center justify-center w-[84px] md:w-[248px] h-14 md:h-16 rounded-xl gap-1 transition-all duration-150
                 ${isActive
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
                   : 'text-gray-400 hover:bg-gray-800 hover:text-white'
@@ -1642,21 +1638,21 @@ export default function SMSBlastPage({ employee, authToken }) {
               title={label}
             >
               <div className="relative flex items-center justify-center">
-                <Icon className="w-8 h-8" />
+                <Icon className="w-6 h-6 md:w-8 md:h-8" />
                 {id === 'chatbot' && (
                   <span className="absolute left-full ml-1 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full leading-none pointer-events-none whitespace-nowrap">
                     New Feature
                   </span>
                 )}
               </div>
-              <span className="text-sm font-semibold tracking-wide leading-none">{label}</span>
+              <span className="hidden md:block text-sm font-semibold tracking-wide leading-none">{label}</span>
             </button>
           );
         })}
       </aside>
 
       {/* Content Area */}
-      <main className="flex-1 bg-gray-50 overflow-y-auto">
+      <main className="flex-1 bg-gray-50 overflow-y-auto pb-16 md:pb-0">
         <ActiveContent employee={employee} authToken={authToken} />
       </main>
     </div>

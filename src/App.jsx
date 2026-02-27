@@ -477,6 +477,19 @@ export default function RestaurantApp() {
     clearCart
   };
 
+  const isShowingLoginPage = !employee && (
+    currentPage === 'pos' ||
+    currentPage === 'products' ||
+    currentPage === 'dashboard' ||
+    currentPage === 'kitchen' ||
+    currentPage === 'smsblast' ||
+    currentPage.startsWith('reports') ||
+    currentPage.startsWith('orders') ||
+    currentPage.startsWith('inventory') ||
+    currentPage.startsWith('staff') ||
+    currentPage.startsWith('settings')
+  );
+
   return (
     <CartContext.Provider value={contextValue}>
       <style>{`
@@ -780,148 +793,23 @@ export default function RestaurantApp() {
           />
         )}
 
-        {/* Mobile Bottom Navigation - Different for home/menu vs other pages */}
-        {(currentPage === 'home' || currentPage === 'menu') ? (
+        {/* Mobile Bottom Navigation */}
+        {!isShowingLoginPage && (
           <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50 pb-safe">
-            <div className="flex items-center justify-between px-4 py-2">
-              <button
-                onClick={() => setCurrentPage('home')}
-                className={`flex flex-col items-center px-3 py-1 ${currentPage === 'home' ? 'text-green-600' : 'text-gray-500'}`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                <span className="text-xs font-medium">Home</span>
-              </button>
-              <button
-                onClick={() => setCurrentPage('menu')}
-                className={`flex flex-col items-center px-3 py-1 ${currentPage === 'menu' ? 'text-green-600' : 'text-gray-500'}`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <span className="text-xs font-medium">Menu</span>
-              </button>
-              {/* Cart Button - Prominent */}
-              <button
-                onClick={() => {
-                  setShowCart(false);
-                  setCurrentPage('cart');
-                }}
-                className="relative bg-green-600 text-white px-6 py-2 rounded-full flex items-center space-x-2 font-bold text-sm shadow-lg"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                <span>Cart</span>
-                {getTotalItems() > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                    {getTotalItems()}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => customer ? setCurrentPage('customer-dashboard') : setCurrentPage('customer-login')}
-                className={`flex flex-col items-center px-3 py-1 ${currentPage === 'customer-dashboard' || currentPage === 'customer-login' ? 'text-green-600' : 'text-gray-500'}`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span className="text-xs font-medium">{customer ? 'Account' : 'Login'}</span>
-              </button>
-            </div>
-          </nav>
-        ) : currentPage === 'pos' ? (
-          <nav className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 md:hidden z-50 pb-safe">
-            <div className="flex justify-around items-center py-2">
-              <button
-                onClick={() => setCurrentPage('home')}
-                className="flex flex-col items-center px-3 py-1 text-gray-300 hover:text-white"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                <span className="text-xs font-medium">Home</span>
-              </button>
-              <button
-                onClick={() => setCurrentPage('orders-active')}
-                className="flex flex-col items-center px-3 py-1 text-gray-300 hover:text-white"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-                <span className="text-xs font-medium">Orders</span>
-              </button>
-              <button
-                onClick={() => setCurrentPage('reports-sales')}
-                className="flex flex-col items-center px-3 py-1 text-gray-300 hover:text-white"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span className="text-xs font-medium">Reports</span>
-              </button>
-              <button
-                onClick={() => setShowShiftEndModal(true)}
-                className="flex flex-col items-center px-3 py-1 text-orange-400 hover:text-orange-300"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-xs font-medium">End Shift</span>
-              </button>
+            <div className="flex justify-center items-center py-2">
               <button
                 onClick={() => {
                   setEmployee(null);
                   sessionStorage.removeItem('employee');
-                  setCurrentPage('home');
+                  sessionStorage.removeItem('authToken');
+                  setCurrentPage('smsblast');
                 }}
-                className="flex flex-col items-center px-3 py-1 text-red-400 hover:text-red-300"
+                className="flex flex-col items-center px-4 py-1 text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
                 <span className="text-xs font-medium">Logout</span>
-              </button>
-            </div>
-          </nav>
-        ) : (
-          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50 pb-safe">
-            <div className="flex justify-around items-center py-2">
-              <button
-                onClick={() => setCurrentPage('home')}
-                className={`flex flex-col items-center px-3 py-1 ${currentPage === 'home' ? 'text-green-600' : 'text-gray-500'}`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                <span className="text-xs font-medium">Home</span>
-              </button>
-              <button
-                onClick={() => setCurrentPage('dashboard')}
-                className={`flex flex-col items-center px-3 py-1 ${currentPage === 'dashboard' ? 'text-green-600' : 'text-gray-500'}`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span className="text-xs font-medium">{employee ? 'Dashboard' : 'Staff'}</span>
-              </button>
-              <button
-                onClick={() => setCurrentPage('pos')}
-                className={`flex flex-col items-center px-3 py-1 ${currentPage === 'pos' ? 'text-green-600' : 'text-gray-500'}`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                <span className="text-xs font-medium">POS</span>
-              </button>
-              <button
-                onClick={() => setCurrentPage('settings-general')}
-                className={`flex flex-col items-center px-3 py-1 ${currentPage.startsWith('settings') ? 'text-green-600' : 'text-gray-500'}`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="text-xs font-medium">Settings</span>
               </button>
             </div>
           </nav>
@@ -2631,32 +2519,32 @@ function EmployeeLoginPage({ onLogin, onBack }) {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 pb-[140px]">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden">
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-sm overflow-hidden">
         {/* accent bar */}
-        <div className="h-2 bg-green-600" />
-        <div className="p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-white" />
+        <div className="h-1.5 bg-green-600" />
+        <div className="p-6">
+          <div className="text-center mb-6">
+            <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <User className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-800">Employee Login</h1>
-            <p className="text-gray-500 mt-2">Sign in to access SMS TextBlast system</p>
+            <h1 className="text-xl font-bold text-gray-800">Employee Login</h1>
+            <p className="text-gray-500 text-sm mt-1.5">Sign in to access SMS TextBlast system</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+              <div className="bg-red-50 text-red-600 p-2.5 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
                 placeholder="Enter username"
                 required
                 autoFocus
@@ -2664,12 +2552,12 @@ function EmployeeLoginPage({ onLogin, onBack }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
                 placeholder="Enter password"
                 required
               />
@@ -2678,7 +2566,7 @@ function EmployeeLoginPage({ onLogin, onBack }) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+              className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
@@ -2686,7 +2574,7 @@ function EmployeeLoginPage({ onLogin, onBack }) {
             <button
               type="button"
               onClick={onBack}
-              className="w-full text-gray-600 py-2 hover:text-gray-800 transition-colors"
+              className="w-full text-gray-600 py-1.5 hover:text-gray-800 transition-colors text-sm"
             >
               Back to Home
             </button>
