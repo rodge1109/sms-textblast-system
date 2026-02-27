@@ -48,9 +48,10 @@ app.use(express.json());
 const PgSession = connectPgSimple(session);
 app.use(session({
   store: new PgSession({
-    pool,                        // Reuse the existing SSL-configured pool
+    pool,
     tableName: 'session',
-    createTableIfMissing: true,  // Auto-create table if it doesn't exist
+    createTableIfMissing: true,
+    errorLog: (err) => console.error('[PgSession]', err),
   }),
   name: 'pos_session',
   secret: process.env.SESSION_SECRET || 'restaurant-pos-secret-key-change-in-production',

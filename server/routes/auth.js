@@ -153,6 +153,8 @@ router.post('/change-password', async (req, res) => {
 // GET /api/auth/employees - Get all employees (admin only)
 router.get('/employees', async (req, res) => {
   try {
+    console.log('[employees] sessionID:', req.sessionID);
+    console.log('[employees] session.employee:', JSON.stringify(req.session?.employee));
     if (!req.session || !req.session.employee) {
       return res.status(401).json({ success: false, error: 'Not logged in' });
     }
