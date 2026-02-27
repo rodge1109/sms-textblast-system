@@ -136,6 +136,21 @@ export default function RestaurantApp() {
     }
   }, [employee]);
 
+  // On mount: verify the server session is still valid (sessionStorage can outlive the session)
+  useEffect(() => {
+    if (employee) {
+      fetch(`${API_URL}/auth/me`, { credentials: 'include' })
+        .then(r => r.json())
+        .then(d => {
+          if (!d.success) {
+            setEmployee(null);
+            sessionStorage.removeItem('employee');
+          }
+        })
+        .catch(() => {});
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Save shift to sessionStorage when it changes
   useEffect(() => {
     if (currentShift) {
