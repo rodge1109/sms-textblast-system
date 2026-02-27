@@ -1,5 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -8,6 +9,17 @@ import pool from '../config/database.js';
 const router = express.Router();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOGS_FILE = path.resolve(__dirname, '../sms-logs.json');
+const JWT_SECRET = process.env.JWT_SECRET || 'sms-blast-jwt-secret-2024';
+
+// Resolve authenticated employee from session OR JWT Bearer token
+function getEmployee(req) {
+  if (req.session?.employee) return req.session.employee;
+  const auth = req.headers.authorization;
+  if (auth?.startsWith('Bearer ')) {
+    try { return jwt.verify(auth.slice(7), JWT_SECRET); } catch {}
+  }
+  return null;
+}
 
 function writeActivityLog(user, action) {
   try {
@@ -57,15 +69,24 @@ router.post('/login', async (req, res) => {
       role: employee.role
     };
 
-    // Force session save before responding so it's in DB for next request
+    const empData = {
+      id: employee.id,
+      username: employee.username,
+      name: employee.name,
+      role: employee.role
+    };
+
+    // Generate JWT token (stateless, works without session)
+    const token = jwt.sign(empData, JWT_SECRET, { expiresIn: '8h' });
+
+    // Also save session (best-effort, failures don't block login)
+    req.session.employee = empData;
     req.session.save((err) => {
-      if (err) {
-        console.error('Session save error:', err);
-        return res.status(500).json({ success: false, error: 'Session save failed: ' + err.message });
-      }
-      writeActivityLog(employee.name, 'Login');
-      res.json({ success: true, employee: req.session.employee });
+      if (err) console.error('Session save error (non-fatal):', err);
     });
+
+    writeActivityLog(employee.name, 'Login');
+    res.json({ success: true, employee: empData, token });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ success: false, error: 'Login failed' });
@@ -153,15 +174,9 @@ router.post('/change-password', async (req, res) => {
 // GET /api/auth/employees - Get all employees (admin only)
 router.get('/employees', async (req, res) => {
   try {
-    console.log('[employees] sessionID:', req.sessionID);
-    console.log('[employees] session.employee:', JSON.stringify(req.session?.employee));
-    if (!req.session || !req.session.employee) {
-      return res.status(401).json({ success: false, error: 'Not logged in' });
-    }
-
-    if (req.session.employee.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
+    const emp = getEmployee(req);
+    if (!emp) return res.status(401).json({ success: false, error: 'Not logged in' });
+    if (emp.role !== 'admin') return res.status(403).json({ success: false, error: 'Admin access required' });
 
     const result = await pool.query(
       'SELECT id, username, name, email, role, active, created_at FROM employees ORDER BY name'
@@ -177,13 +192,9 @@ router.get('/employees', async (req, res) => {
 // POST /api/auth/employees - Create new employee (admin only)
 router.post('/employees', async (req, res) => {
   try {
-    if (!req.session || !req.session.employee) {
-      return res.status(401).json({ success: false, error: 'Not logged in' });
-    }
-
-    if (req.session.employee.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
+    const emp = getEmployee(req);
+    if (!emp) return res.status(401).json({ success: false, error: 'Not logged in' });
+    if (emp.role !== 'admin') return res.status(403).json({ success: false, error: 'Admin access required' });
 
     const { username, password, name, email, role } = req.body;
 
@@ -226,13 +237,9 @@ router.post('/employees', async (req, res) => {
 // PUT /api/auth/employees/:id - Update employee (admin only)
 router.put('/employees/:id', async (req, res) => {
   try {
-    if (!req.session || !req.session.employee) {
-      return res.status(401).json({ success: false, error: 'Not logged in' });
-    }
-
-    if (req.session.employee.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
+    const emp = getEmployee(req);
+    if (!emp) return res.status(401).json({ success: false, error: 'Not logged in' });
+    if (emp.role !== 'admin') return res.status(403).json({ success: false, error: 'Admin access required' });
 
     const { id } = req.params;
     const { name, email, role, active, password } = req.body;

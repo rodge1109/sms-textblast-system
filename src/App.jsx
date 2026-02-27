@@ -102,6 +102,9 @@ export default function RestaurantApp() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // JWT token (stateless auth fallback for when session cookies fail)
+  const [authToken, setAuthToken] = useState(() => sessionStorage.getItem('authToken') || null);
+
   // Shift state (for POS shift tracking)
   const [currentShift, setCurrentShift] = useState(() => {
     const saved = sessionStorage.getItem('currentShift');
@@ -150,6 +153,15 @@ export default function RestaurantApp() {
         .catch(() => {});
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Unified login handler — saves employee + JWT token
+  const handleLogin = (emp, token) => {
+    setEmployee(emp);
+    if (token) {
+      setAuthToken(token);
+      sessionStorage.setItem('authToken', token);
+    }
+  };
 
   // Save shift to sessionStorage when it changes
   useEffect(() => {
@@ -644,7 +656,7 @@ export default function RestaurantApp() {
               )}
             </>
           ) : (
-            <EmployeeLoginPage onLogin={(emp) => setEmployee(emp)} onBack={() => setCurrentPage('home')} />
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
         )}
         {currentPage === 'products' && (
@@ -655,7 +667,7 @@ export default function RestaurantApp() {
               <AccessDeniedPage message="Only managers and administrators can access Product Management." onBack={() => setCurrentPage('pos')} />
             )
           ) : (
-            <EmployeeLoginPage onLogin={(emp) => setEmployee(emp)} onBack={() => setCurrentPage('home')} />
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
         )}
         {currentPage.startsWith('reports') && (
@@ -666,7 +678,7 @@ export default function RestaurantApp() {
               <AccessDeniedPage message="Only managers and administrators can access Reports." onBack={() => setCurrentPage('pos')} />
             )
           ) : (
-            <EmployeeLoginPage onLogin={(emp) => setEmployee(emp)} onBack={() => setCurrentPage('home')} />
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
         )}
         {/* Dashboard */}
@@ -674,7 +686,7 @@ export default function RestaurantApp() {
           employee ? (
             <DashboardPage setCurrentPage={setCurrentPage} employee={employee} />
           ) : (
-            <EmployeeLoginPage onLogin={(emp) => setEmployee(emp)} onBack={() => setCurrentPage('home')} />
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
         )}
         {/* Orders Pages */}
@@ -682,7 +694,7 @@ export default function RestaurantApp() {
           employee ? (
             <OrdersPage currentView={currentPage} setCurrentPage={setCurrentPage} />
           ) : (
-            <EmployeeLoginPage onLogin={(emp) => setEmployee(emp)} onBack={() => setCurrentPage('home')} />
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
         )}
         {/* Kitchen Display */}
@@ -690,7 +702,7 @@ export default function RestaurantApp() {
           employee ? (
             <KitchenDisplayPage />
           ) : (
-            <EmployeeLoginPage onLogin={(emp) => setEmployee(emp)} onBack={() => setCurrentPage('home')} />
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
         )}
         {/* Inventory Pages */}
@@ -702,7 +714,7 @@ export default function RestaurantApp() {
               <AccessDeniedPage message="Only managers and administrators can access Inventory." onBack={() => setCurrentPage('pos')} />
             )
           ) : (
-            <EmployeeLoginPage onLogin={(emp) => setEmployee(emp)} onBack={() => setCurrentPage('home')} />
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
         )}
         {/* Staff Pages */}
@@ -714,7 +726,7 @@ export default function RestaurantApp() {
               <AccessDeniedPage message="Only administrators can access Staff Management." onBack={() => setCurrentPage('pos')} />
             )
           ) : (
-            <EmployeeLoginPage onLogin={(emp) => setEmployee(emp)} onBack={() => setCurrentPage('home')} />
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
         )}
         {/* Settings Pages */}
@@ -726,15 +738,15 @@ export default function RestaurantApp() {
               <AccessDeniedPage message="Only administrators can access Settings." onBack={() => setCurrentPage('pos')} />
             )
           ) : (
-            <EmployeeLoginPage onLogin={(emp) => setEmployee(emp)} onBack={() => setCurrentPage('home')} />
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
         )}
         {/* SMS Blast Page */}
         {currentPage === 'smsblast' && (
           employee ? (
-            <SMSBlastPage employee={employee} />
+            <SMSBlastPage employee={employee} authToken={authToken} />
           ) : (
-            <EmployeeLoginPage onLogin={(emp) => setEmployee(emp)} onBack={() => setCurrentPage('home')} />
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
         )}
         {currentPage === 'customer-login' && <CustomerLoginPage setCustomer={setCustomer} setCurrentPage={setCurrentPage} />}
@@ -2592,7 +2604,7 @@ function EmployeeLoginPage({ onLogin, onBack }) {
       const result = await response.json();
 
       if (result.success) {
-        onLogin(result.employee);
+        onLogin(result.employee, result.token);
       } else {
         setError(result.error || 'Login failed');
       }

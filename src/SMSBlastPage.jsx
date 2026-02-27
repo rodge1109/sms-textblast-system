@@ -1263,7 +1263,7 @@ function LogsContent() {
 
 const ROLES = ['admin', 'manager', 'cashier'];
 
-function UsersContent({ employee }) {
+function UsersContent({ employee, authToken }) {
   const isAdmin = employee?.role === 'admin';
 
   const [users, setUsers]         = useState([]);
@@ -1278,9 +1278,14 @@ function UsersContent({ employee }) {
   const emptyForm = { username: '', name: '', email: '', role: 'cashier', password: '', active: true };
   const [form, setForm] = useState(emptyForm);
 
+  // Build auth headers — prefer JWT token (works without session cookies)
+  const authHeaders = authToken
+    ? { 'Authorization': `Bearer ${authToken}` }
+    : {};
+
   const load = () => {
     setLoading(true); setLoadError('');
-    fetch(`${API_BASE}/auth/employees`, { credentials: 'include' })
+    fetch(`${API_BASE}/auth/employees`, { credentials: 'include', headers: authHeaders })
       .then(r => r.json())
       .then(d => {
         if (d.success) { setUsers(d.employees); }
@@ -1290,7 +1295,7 @@ function UsersContent({ employee }) {
       .catch(() => { setLoadError('Cannot reach server.'); setLoading(false); });
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openAdd() {
     setEditUser(null);
@@ -1319,7 +1324,7 @@ function UsersContent({ employee }) {
         ? { name: form.name, email: form.email, role: form.role, active: form.active, ...(form.password ? { password: form.password } : {}) }
         : { username: form.username, name: form.name, email: form.email, role: form.role, password: form.password };
 
-      const res  = await fetch(url, { method, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res  = await fetch(url, { method, credentials: 'include', headers: { 'Content-Type': 'application/json', ...authHeaders }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!data.success) { setFormError(data.error || 'Failed to save.'); }
       else { setFormSuccess(editUser ? 'User updated.' : 'User created.'); load(); if (!editUser) setForm(emptyForm); }
@@ -1617,7 +1622,7 @@ const contentMap = {
   chatbot:   ChatBotContent,
 };
 
-export default function SMSBlastPage({ employee }) {
+export default function SMSBlastPage({ employee, authToken }) {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const ActiveContent = contentMap[activeMenu];
 
@@ -1654,7 +1659,7 @@ export default function SMSBlastPage({ employee }) {
 
       {/* Content Area */}
       <main className="flex-1 bg-gray-50 overflow-y-auto">
-        <ActiveContent employee={employee} />
+        <ActiveContent employee={employee} authToken={authToken} />
       </main>
     </div>
   );
