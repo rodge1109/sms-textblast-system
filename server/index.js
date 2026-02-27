@@ -5,6 +5,7 @@ import connectPgSimple from 'connect-pg-simple';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import pool from './config/database.js';
 import productsRoutes from './routes/products.js';
 import ordersRoutes from './routes/orders.js';
 import customersRoutes from './routes/customers.js';
@@ -47,10 +48,9 @@ app.use(express.json());
 const PgSession = connectPgSimple(session);
 app.use(session({
   store: new PgSession({
-    conString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
+    pool,                        // Reuse the existing SSL-configured pool
     tableName: 'session',
-    createTableIfMissing: false,
+    createTableIfMissing: true,  // Auto-create table if it doesn't exist
   }),
   name: 'pos_session',
   secret: process.env.SESSION_SECRET || 'restaurant-pos-secret-key-change-in-production',
