@@ -16,6 +16,8 @@ import {
   Zap,
 } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'consumers', label: 'Consumers', icon: Users },
@@ -31,7 +33,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/logs')
+    fetch(`${API_BASE}/logs`)
       .then(r => r.json())
       .then(data => { setLogs(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -225,7 +227,7 @@ function BillsContent() {
     setLoading(true);
     setError(null);
     try {
-      const res  = await fetch('http://localhost:5000/api/sheets/latest-bill');
+      const res  = await fetch(`${API_BASE}/sheets/latest-bill`);
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load data.');
       setData(json);
@@ -436,7 +438,7 @@ function ToolsContent() {
 
   // Load saved templates from server on mount
   useEffect(() => {
-    fetch('http://localhost:5000/api/templates')
+    fetch(`${API_BASE}/templates`)
       .then(r => r.json())
       .then(data => {
         if (data.billTpl)  setBillTpl(data.billTpl);
@@ -450,7 +452,7 @@ function ToolsContent() {
   async function handleSaveTemplates() {
     setTplSaveStatus(null);
     try {
-      const res = await fetch('http://localhost:5000/api/templates', {
+      const res = await fetch(`${API_BASE}/templates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ billTpl, dueTpl, discTpl, advTpl }),
@@ -604,7 +606,7 @@ function ToolsContent() {
             formatDate(disconDate),
           ]),
         };
-        const sheetRes = await fetch('http://localhost:5000/api/sheets/latest-bill/replace', {
+        const sheetRes = await fetch(`${API_BASE}/sheets/latest-bill/replace`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(sheetPayload),
@@ -658,7 +660,7 @@ function ToolsContent() {
       if (abortRef.current) { cancelled = true; break; }
       const chunk = allMessages.slice(i, i + CHUNK);
       try {
-        const res  = await fetch('http://localhost:5000/api/sms/send-bulk', {
+        const res  = await fetch(`${API_BASE}/sms/send-bulk`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: chunk }),
         });
@@ -676,7 +678,7 @@ function ToolsContent() {
     } else {
       setSendProgress({ total, done: total, sent: totalSent, failed: totalFailed }); // show 100%
       setBillsSendStatus({ type: 'success', msg: `Done — ${totalSent} sent, ${totalFailed} failed.` });
-      fetch('http://localhost:5000/api/logs', {
+      fetch(`${API_BASE}/logs`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: 'System', logCode: 'Monthly Bill', sent: totalSent, failed: totalFailed }),
       }).catch(() => {});
@@ -761,7 +763,7 @@ function ToolsContent() {
       if (abortRef.current) { cancelled = true; break; }
       const chunk = allMessages.slice(i, i + CHUNK);
       try {
-        const res  = await fetch('http://localhost:5000/api/sms/send-bulk', {
+        const res  = await fetch(`${API_BASE}/sms/send-bulk`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: chunk }),
         });
@@ -779,7 +781,7 @@ function ToolsContent() {
     } else {
       setSendProgress({ total, done: total, sent: totalSent, failed: totalFailed }); // show 100%
       setBroadcastSendStatus({ type: 'success', msg: `Done — ${totalSent} sent, ${totalFailed} failed.` });
-      fetch('http://localhost:5000/api/logs', {
+      fetch(`${API_BASE}/logs`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: 'System', logCode: notifType, sent: totalSent, failed: totalFailed }),
       }).catch(() => {});
@@ -1199,7 +1201,7 @@ function LogsContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/logs')
+    fetch(`${API_BASE}/logs`)
       .then(r => r.json())
       .then(data => { setLogs(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -1278,7 +1280,7 @@ function UsersContent({ employee }) {
 
   const load = () => {
     setLoading(true); setLoadError('');
-    fetch('http://localhost:5000/api/auth/employees', { credentials: 'include' })
+    fetch(`${API_BASE}/auth/employees`, { credentials: 'include' })
       .then(r => r.json())
       .then(d => {
         if (d.success) { setUsers(d.employees); }
@@ -1311,7 +1313,7 @@ function UsersContent({ employee }) {
 
     setSaving(true);
     try {
-      const url    = editUser ? `http://localhost:5000/api/auth/employees/${editUser.id}` : 'http://localhost:5000/api/auth/employees';
+      const url    = editUser ? `${API_BASE}/auth/employees/${editUser.id}` : `${API_BASE}/auth/employees`;
       const method = editUser ? 'PUT' : 'POST';
       const body   = editUser
         ? { name: form.name, email: form.email, role: form.role, active: form.active, ...(form.password ? { password: form.password } : {}) }
@@ -1458,7 +1460,7 @@ function ChatBotContent() {
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState('');
 
-  const API = 'http://localhost:5000/api/chatbot';
+  const API = `${API_BASE}/chatbot`;
 
   const load = () => {
     setLoading(true); setError('');
