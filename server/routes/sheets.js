@@ -21,6 +21,30 @@ function getWriteSheets() {
   return google.sheets({ version: 'v4', auth });
 }
 
+// GET /api/sheets/masterlist
+// Returns { success, headers, rows } from the Masterlist tab
+router.get('/masterlist', async (req, res) => {
+  try {
+    const targetSheetId = process.env.GOOGLE_LATEST_BILL_SHEET_ID || DEFAULT_SHEET_ID;
+    const sheets = getWriteSheets();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: targetSheetId,
+      range: 'Masterlist',
+    });
+
+    const values = response.data.values || [];
+    if (values.length === 0) {
+      return res.json({ success: true, headers: [], rows: [] });
+    }
+
+    const [headers, ...rows] = values;
+    return res.json({ success: true, headers, rows });
+  } catch (err) {
+    console.error('Masterlist read error:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GET /api/sheets/latest-bill
 // Returns { success, headers, rows } from the LatestBill tab
 router.get('/latest-bill', async (req, res) => {

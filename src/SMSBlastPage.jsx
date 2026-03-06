@@ -213,10 +213,88 @@ function DashboardContent() {
 }
 
 function ConsumersContent() {
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res  = await fetch(`${API_BASE}/sheets/masterlist`);
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load data.');
+      setData(json);
+    } catch (e) {
+      setError(e.message);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
   return (
-    <div className="p-8">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">Consumers</h2>
-      <p className="text-gray-500">Manage your consumer contacts here.</p>
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Consumers</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Current data in the Masterlist Google Sheet tab.</p>
+        </div>
+        <button
+          onClick={fetchData}
+          disabled={loading}
+          className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded font-semibold transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Loading…' : 'Refresh'}
+        </button>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded border text-sm bg-red-50 text-red-700 border-red-200">
+          <XCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {data && (
+        <div className="border border-gray-300 rounded overflow-hidden">
+          <div className="px-3 py-1.5 bg-gray-200 border-b border-gray-300">
+            <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+              Masterlist — {data.rows.length} record{data.rows.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="overflow-auto max-h-[calc(100vh-260px)]">
+            {data.rows.length === 0 ? (
+              <p className="p-8 text-sm text-gray-400 text-center">No data found in the Masterlist tab.</p>
+            ) : (
+              <table className="w-full text-xs border-collapse">
+                <thead className="bg-gray-100 sticky top-0">
+                  <tr>
+                    <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold text-gray-500 w-8">#</th>
+                    {data.headers.map(h => (
+                      <th key={h} className="border border-gray-300 px-2 py-1.5 text-left font-semibold text-gray-600 whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.rows.map((row, i) => (
+                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="border border-gray-200 px-2 py-1 text-gray-400 text-right">{i + 1}</td>
+                      {data.headers.map((_, ci) => (
+                        <td key={ci} className="border border-gray-200 px-2 py-1 text-gray-700">{row[ci] ?? ''}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!data && !loading && !error && (
+        <p className="text-sm text-gray-400 text-center py-10">No data loaded.</p>
+      )}
     </div>
   );
 }
