@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -212,18 +212,237 @@ function DashboardContent() {
   );
 }
 
-function ConsumersContent() {
-  const [data, setData]       = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
+// ── SmsToolModal ──────────────────────────────────────────────────────────────
 
-  const fetchData = async () => {
+const SMS_TYPES = ['Billing', 'Due Date', 'Disconnection', 'Advisory'];
+
+function SmsToolModal({ consumers, headers, onClose }) {
+  const [smsType, setSmsType]       = useState('Due Date');
+  const [datePosted, setDatePosted] = useState('');
+  const [dueDate, setDueDate]       = useState('');
+  const [disconDate, setDisconDate] = useState('');
+  const [advisory, setAdvisory]     = useState('');
+  const [templates, setTemplates]   = useState(null);
+  const [sending, setSending]       = useState(false);
+  const [progress, setProgress]     = useState(null);
+  const [result, setResult]         = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+  // Detect column indices from header names
+  const phoneColIdx   = headers.findIndex(h => /cellphone|phone|mobile|contact/i.test(h));
+  const nameColIdx    = headers.findIndex(h => /^name$/i.test(h));
+  const accountColIdx = headers.findIndex(h => /account/i.test(h));
+
+  useEffect(() => {
+    fetch(`${API_BASE}/templates`)
+      .then(r => r.json())
+      .then(t => { setTemplates(t); if (t?.advTpl) setAdvisory(t.advTpl); })
+      .catch(() => {});
+  }, []);
+
+  const fmtPhone = (raw) => {
+    if (!raw) return '';
+    let n = String(raw).replace(/[\s\-()+]/g, '');
+    if (n.startsWith('63') && n.length === 12) n = '0' + n.slice(2);
+    if (n.startsWith('9')  && n.length === 10) n = '0' + n;
+    return /^09\d{9}$/.test(n) ? n : '';
+  };
+
+  const fmtDate = (d) => {
+    if (!d) return '';
+    const [y, m, day] = d.split('-');
+    return `${m}/${day}/${y}`;
+  };
+
+  const applyTpl = (tpl, vars) =>
+    (tpl || '').replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+
+  const validConsumers = useMemo(
+    () => consumers.filter(row => fmtPhone(row[phoneColIdx] ?? '')),
+    [consumers, phoneColIdx]
+  );
+
+  const buildMsg = (row) => {
+    if (!templates) return '';
+    const name          = nameColIdx    >= 0 ? (row[nameColIdx]    ?? 'Consumer') : 'Consumer';
+    const accountNumber = accountColIdx >= 0 ? (row[accountColIdx] ?? '')         : '';
+    const vars = {
+      name, accountNumber,
+      datePosted:  fmtDate(datePosted),
+      dueDate:     fmtDate(dueDate),
+      disconDate:  fmtDate(disconDate),
+      date:        fmtDate(smsType === 'Billing' ? datePosted : smsType === 'Due Date' ? dueDate : disconDate),
+      advisory,
+      consumption: '', waterFee: '0.00', installFee: '0.00',
+      meterMaint: '0.00', penalty: '0.00', totalAmount: '0.00',
+    };
+    const tplMap = { Billing: templates.billTpl, 'Due Date': templates.dueTpl, Disconnection: templates.discTpl, Advisory: advisory };
+    return applyTpl(tplMap[smsType], vars);
+  };
+
+  const handleSend = async () => {
+    const messages = validConsumers.map(row => ({ phone: fmtPhone(row[phoneColIdx] ?? ''), message: buildMsg(row) }));
+    setSending(true); setResult(null); setProgress(null);
+    const CHUNK = 20;
+    let sent = 0, failed = 0;
+    for (let i = 0; i < messages.length; i += CHUNK) {
+      const chunk = messages.slice(i, i + CHUNK);
+      try {
+        const res  = await fetch(`${API_BASE}/sms/send-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: chunk }) });
+        const data = await res.json();
+        if (data.success) { sent += data.sent; failed += data.failed; } else failed += chunk.length;
+      } catch { failed += chunk.length; }
+      setProgress({ total: messages.length, done: Math.min(i + CHUNK, messages.length), sent, failed });
+    }
+    setSending(false);
+    setResult({ sent, failed });
+  };
+
+  const previewMsg = validConsumers.length > 0 ? buildMsg(validConsumers[0]) : '';
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-bold text-gray-800">SMS Tool</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              <span className="font-semibold text-gray-700">{validConsumers.length}</span> of {consumers.length} filtered consumers have valid phone numbers.
+            </p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none ml-4">✕</button>
+        </div>
+
+        {/* SMS Type selector */}
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">SMS Type</p>
+          <div className="flex gap-2 flex-wrap">
+            {SMS_TYPES.map(t => (
+              <button key={t} onClick={() => { setSmsType(t); setResult(null); setProgress(null); }}
+                className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
+                  smsType === t ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                }`}
+              >{t}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Billing: three date inputs */}
+        {smsType === 'Billing' && (
+          <div className="space-y-2 p-3 bg-gray-50 rounded border border-gray-200">
+            {[['Date Posted', datePosted, setDatePosted], ['Due Date', dueDate, setDueDate], ['Disconnection Date', disconDate, setDisconDate]].map(([label, val, set]) => (
+              <div key={label} className="flex items-center gap-2">
+                <span className="text-xs text-gray-600 w-36 shrink-0">{label}</span>
+                <input type="date" value={val} onChange={e => set(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400" />
+              </div>
+            ))}
+            <p className="text-[10px] text-gray-400">Amount fields will be blank — use the Tools tab for full billing SMS.</p>
+          </div>
+        )}
+
+        {/* Due Date / Disconnection: single date */}
+        {(smsType === 'Due Date' || smsType === 'Disconnection') && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-600 w-36 shrink-0">{smsType === 'Due Date' ? 'Due Date' : 'Disconnection Date'}</span>
+            <input type="date"
+              value={smsType === 'Due Date' ? dueDate : disconDate}
+              onChange={e => smsType === 'Due Date' ? setDueDate(e.target.value) : setDisconDate(e.target.value)}
+              className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+            />
+          </div>
+        )}
+
+        {/* Advisory: text area */}
+        {smsType === 'Advisory' && (
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-gray-600">Advisory Text</label>
+            <textarea value={advisory} onChange={e => setAdvisory(e.target.value)} rows={3}
+              placeholder="Enter advisory message…"
+              className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400 resize-y"
+            />
+          </div>
+        )}
+
+        {/* SMS preview */}
+        {templates && previewMsg && (
+          <div className="space-y-1">
+            <button onClick={() => setShowPreview(v => !v)} className="text-xs text-blue-600 hover:underline font-medium">
+              {showPreview ? 'Hide' : 'Preview'} SMS (first recipient)
+            </button>
+            {showPreview && (
+              <div className="bg-gray-50 border border-gray-200 rounded p-3 text-xs text-gray-700 max-h-32 overflow-y-auto whitespace-pre-wrap font-mono leading-relaxed">
+                {previewMsg}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Progress bar */}
+        {progress && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>{progress.done >= progress.total ? 'Complete' : `Sending ${progress.done} / ${progress.total}`}</span>
+              <span><span className="text-green-600 font-medium">{progress.sent} sent</span> · <span className="text-red-500">{progress.failed} failed</span></span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div className={`h-2 rounded-full transition-all duration-300 ${progress.done >= progress.total ? 'bg-green-500' : 'bg-blue-500'}`}
+                style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }} />
+            </div>
+          </div>
+        )}
+
+        {/* Result */}
+        {result && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded border text-sm bg-green-50 text-green-700 border-green-200">
+            <CheckCircle className="w-4 h-4 shrink-0" />
+            <span>Done — {result.sent} sent, {result.failed} failed.</span>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex gap-3 pt-2 border-t border-gray-200">
+          <button onClick={handleSend}
+            disabled={sending || validConsumers.length === 0 || !templates}
+            className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-6 py-1.5 rounded transition-colors disabled:opacity-50"
+          >
+            {sending ? 'Sending…' : `Send SMS (${validConsumers.length})`}
+          </button>
+          <button onClick={onClose} className="text-xs px-4 py-1.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SheetGrid ─────────────────────────────────────────────────────────────────
+// Reusable grid with global search, per-column filters, and sortable headers.
+// Data is cached in memory per apiUrl — navigating away and back is instant.
+
+const _sheetCache = {}; // { [apiUrl]: { headers, rows } }
+
+function SheetGrid({ title, subtitle, apiUrl, tabLabel, extraButtons, onFilteredRowsChange }) {
+  const [data, setData]               = useState(_sheetCache[apiUrl] || null);
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState(null);
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [colFilters, setColFilters]   = useState({});   // { colIndex: string }
+  const [sortCol, setSortCol]         = useState(null); // column index
+  const [sortDir, setSortDir]         = useState('asc');
+  const [showColFilters, setShowColFilters] = useState(false);
+
+  const fetchData = async (bustCache = false) => {
     setLoading(true);
     setError(null);
     try {
-      const res  = await fetch(`${API_BASE}/sheets/masterlist`);
+      const res  = await fetch(apiUrl);
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load data.');
+      _sheetCache[apiUrl] = json;
       setData(json);
     } catch (e) {
       setError(e.message);
@@ -231,22 +450,77 @@ function ConsumersContent() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { if (!_sheetCache[apiUrl]) fetchData(); }, []);
+
+  const filteredRows = useMemo(() => {
+    if (!data) return [];
+    let rows = data.rows;
+
+    // Global search across all columns
+    const q = globalSearch.trim().toLowerCase();
+    if (q) rows = rows.filter(row => row.some(cell => (cell ?? '').toLowerCase().includes(q)));
+
+    // Per-column filters
+    for (const [ci, val] of Object.entries(colFilters)) {
+      if (!val.trim()) continue;
+      const fq = val.toLowerCase();
+      rows = rows.filter(row => (row[ci] ?? '').toLowerCase().includes(fq));
+    }
+
+    // Sort
+    if (sortCol !== null) {
+      rows = [...rows].sort((a, b) => {
+        const av = (a[sortCol] ?? '').toLowerCase();
+        const bv = (b[sortCol] ?? '').toLowerCase();
+        const cmp = av.localeCompare(bv, undefined, { numeric: true });
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+
+    return rows;
+  }, [data, globalSearch, colFilters, sortCol, sortDir]);
+
+  useEffect(() => {
+    if (onFilteredRowsChange) onFilteredRowsChange(filteredRows, data ? data.headers : []);
+  }, [filteredRows]);
+
+  const handleSort = (ci) => {
+    if (sortCol === ci) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(ci); setSortDir('asc'); }
+  };
+
+  const hasActiveFilters = globalSearch || Object.values(colFilters).some(v => v.trim()) || sortCol !== null;
+
+  const clearAll = () => {
+    setGlobalSearch('');
+    setColFilters({});
+    setSortCol(null);
+    setSortDir('asc');
+  };
+
+  const SortIcon = ({ ci }) => {
+    if (sortCol !== ci) return <span className="text-gray-300 ml-1">↕</span>;
+    return <span className="text-blue-500 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>;
+  };
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-3">
+      {/* Title row */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Consumers</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Current data in the Masterlist Google Sheet tab.</p>
+          <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
         </div>
-        <button
-          onClick={fetchData}
-          disabled={loading}
-          className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded font-semibold transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Loading…' : 'Refresh'}
-        </button>
+        <div className="flex items-center gap-2">
+          {extraButtons}
+          <button
+            onClick={() => { delete _sheetCache[apiUrl]; fetchData(); }}
+            disabled={loading}
+            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded font-semibold transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -256,28 +530,90 @@ function ConsumersContent() {
         </div>
       )}
 
+      {data && data.rows.length > 0 && (
+        /* Filter toolbar */
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            type="text"
+            placeholder="Search all columns…"
+            value={globalSearch}
+            onChange={e => setGlobalSearch(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-blue-400 w-56"
+          />
+          <button
+            onClick={() => setShowColFilters(v => !v)}
+            className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
+              showColFilters || Object.values(colFilters).some(v => v.trim())
+                ? 'bg-blue-50 border-blue-400 text-blue-700'
+                : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
+            }`}
+          >
+            Column Filters {Object.values(colFilters).filter(v => v.trim()).length > 0 && `(${Object.values(colFilters).filter(v => v.trim()).length})`}
+          </button>
+          {hasActiveFilters && (
+            <button
+              onClick={clearAll}
+              className="text-xs px-3 py-1.5 rounded border border-red-200 text-red-500 hover:bg-red-50 font-medium transition-colors"
+            >
+              Clear All
+            </button>
+          )}
+          <span className="ml-auto text-xs text-gray-500">
+            {filteredRows.length === data.rows.length
+              ? `${data.rows.length} record${data.rows.length !== 1 ? 's' : ''}`
+              : `${filteredRows.length} of ${data.rows.length} records`}
+          </span>
+        </div>
+      )}
+
       {data && (
         <div className="border border-gray-300 rounded overflow-hidden">
           <div className="px-3 py-1.5 bg-gray-200 border-b border-gray-300">
             <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              Masterlist — {data.rows.length} record{data.rows.length !== 1 ? 's' : ''}
+              {tabLabel}
             </span>
           </div>
-          <div className="overflow-auto max-h-[calc(100vh-260px)]">
+          <div className="overflow-auto max-h-[calc(100vh-310px)]">
             {data.rows.length === 0 ? (
-              <p className="p-8 text-sm text-gray-400 text-center">No data found in the Masterlist tab.</p>
+              <p className="p-8 text-sm text-gray-400 text-center">No data found in the {tabLabel} tab.</p>
+            ) : filteredRows.length === 0 ? (
+              <p className="p-8 text-sm text-gray-400 text-center">No records match your filters.</p>
             ) : (
               <table className="w-full text-xs border-collapse">
-                <thead className="bg-gray-100 sticky top-0">
+                <thead className="bg-gray-100 sticky top-0 z-10">
+                  {/* Column headers (sortable) */}
                   <tr>
                     <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold text-gray-500 w-8">#</th>
-                    {data.headers.map(h => (
-                      <th key={h} className="border border-gray-300 px-2 py-1.5 text-left font-semibold text-gray-600 whitespace-nowrap">{h}</th>
+                    {data.headers.map((h, ci) => (
+                      <th
+                        key={ci}
+                        onClick={() => handleSort(ci)}
+                        className="border border-gray-300 px-2 py-1.5 text-left font-semibold text-gray-600 whitespace-nowrap cursor-pointer select-none hover:bg-gray-200 transition-colors"
+                      >
+                        {h}<SortIcon ci={ci} />
+                      </th>
                     ))}
                   </tr>
+                  {/* Per-column filter inputs */}
+                  {showColFilters && (
+                    <tr className="bg-blue-50">
+                      <td className="border border-gray-300 px-1 py-1" />
+                      {data.headers.map((_, ci) => (
+                        <td key={ci} className="border border-gray-300 px-1 py-1">
+                          <input
+                            type="text"
+                            placeholder="filter…"
+                            value={colFilters[ci] || ''}
+                            onChange={e => setColFilters(prev => ({ ...prev, [ci]: e.target.value }))}
+                            className="w-full border border-blue-200 rounded px-1.5 py-0.5 text-[11px] focus:outline-none focus:border-blue-400 bg-white"
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  )}
                 </thead>
                 <tbody>
-                  {data.rows.map((row, i) => (
+                  {filteredRows.map((row, i) => (
                     <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       <td className="border border-gray-200 px-2 py-1 text-gray-400 text-right">{i + 1}</td>
                       {data.headers.map((_, ci) => (
@@ -299,90 +635,48 @@ function ConsumersContent() {
   );
 }
 
-function BillsContent() {
-  const [data, setData]       = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
-
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res  = await fetch(`${API_BASE}/sheets/latest-bill`);
-      const json = await res.json();
-      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load data.');
-      setData(json);
-    } catch (e) {
-      setError(e.message);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchData(); }, []);
+function ConsumersContent() {
+  const [smsToolOpen, setSmsToolOpen]           = useState(false);
+  const [filteredConsumers, setFilteredConsumers] = useState([]);
+  const [filteredHeaders, setFilteredHeaders]     = useState([]);
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Bills</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Current data in the LatestBill Google Sheet tab.</p>
-        </div>
-        <button
-          onClick={fetchData}
-          disabled={loading}
-          className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded font-semibold transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Loading…' : 'Refresh'}
-        </button>
-      </div>
-
-      {error && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded border text-sm bg-red-50 text-red-700 border-red-200">
-          <XCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
-        </div>
+    <>
+      <SheetGrid
+        title="Consumers"
+        subtitle="Current data in the Masterlist Google Sheet tab."
+        apiUrl={`${API_BASE}/sheets/masterlist`}
+        tabLabel="Masterlist"
+        onFilteredRowsChange={(rows, headers) => { setFilteredConsumers(rows); setFilteredHeaders(headers); }}
+        extraButtons={
+          <button
+            onClick={() => setSmsToolOpen(true)}
+            disabled={filteredConsumers.length === 0}
+            className="text-xs bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded font-semibold transition-colors disabled:opacity-40"
+          >
+            SMS Tool
+          </button>
+        }
+      />
+      {smsToolOpen && (
+        <SmsToolModal
+          consumers={filteredConsumers}
+          headers={filteredHeaders}
+          onClose={() => setSmsToolOpen(false)}
+        />
       )}
+    </>
+  );
+}
 
-      {data && (
-        <div className="border border-gray-300 rounded overflow-hidden">
-          <div className="px-3 py-1.5 bg-gray-200 border-b border-gray-300">
-            <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              LatestBill — {data.rows.length} record{data.rows.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-          <div className="overflow-auto max-h-[calc(100vh-260px)]">
-            {data.rows.length === 0 ? (
-              <p className="p-8 text-sm text-gray-400 text-center">No data found in the LatestBill tab.</p>
-            ) : (
-              <table className="w-full text-xs border-collapse">
-                <thead className="bg-gray-100 sticky top-0">
-                  <tr>
-                    <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold text-gray-500 w-8">#</th>
-                    {data.headers.map(h => (
-                      <th key={h} className="border border-gray-300 px-2 py-1.5 text-left font-semibold text-gray-600 whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.rows.map((row, i) => (
-                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="border border-gray-200 px-2 py-1 text-gray-400 text-right">{i + 1}</td>
-                      {data.headers.map((_, ci) => (
-                        <td key={ci} className="border border-gray-200 px-2 py-1 text-gray-700">{row[ci] ?? ''}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
-
-      {!data && !loading && !error && (
-        <p className="text-sm text-gray-400 text-center py-10">No data loaded.</p>
-      )}
-    </div>
+function BillsContent() {
+  return (
+    <SheetGrid
+      title="Bills"
+      subtitle="Current data in the LatestBill Google Sheet tab."
+      apiUrl={`${API_BASE}/sheets/latest-bill`}
+      tabLabel="LatestBill"
+    />
   );
 }
 
@@ -574,11 +868,11 @@ function ToolsContent() {
     const accountNumber = consumer['ACCOUNT_NUMBER'] || consumer.account_number || '';
     const conscode      = bill['Conscode']         || bill['conscode']          || Object.values(bill)[0] || '';
     const consumption   = bill['Consumption']      || bill['consumption']       || '';
-    const waterFee      = bill['Water Fee']        || bill['water_fee']         || bill['WaterFee']        || '0.00';
+    const waterFee      = (parseFloat((bill['Water Fee'] || bill['water_fee'] || bill['WaterFee'] || '0').replace(/,/g, '') || 0) * 1.02).toFixed(2);
     const installFee    = bill['Installation Fee'] || bill['installation_fee']  || bill['InstallationFee'] || '0.00';
     const meterMaint    = bill['Meter Maintenance']|| bill['meter_maintenance'] || bill['MeterMaintenance']|| '0.00';
     const totalAmount   = (
-      parseFloat(waterFee.replace(/,/g, '')   || 0) +
+      parseFloat(waterFee) +
       parseFloat(installFee.replace(/,/g, '') || 0) +
       parseFloat(meterMaint.replace(/,/g, '') || 0)
     ).toFixed(2);
@@ -590,14 +884,14 @@ function ToolsContent() {
   };
 
   const extractFees = (row) => {
-    const waterFee   = row['Water Fee']             || row['water_fee']          || row['WaterFee']             || '0.00';
+    const waterFee   = (parseFloat((row['Water Fee'] || row['water_fee'] || row['WaterFee'] || '0').replace(/,/g, '') || 0) * 1.02).toFixed(2);
     const installFee = row['Installation Fee']      || row['installation_fee']   || row['InstallationFee']      || '0.00';
     // Handle both "Meter Maintenance" (bills/due) and "Meter Maintenance Fee" (disconnection)
     const meterMaint = row['Meter Maintenance Fee'] || row['Meter Maintenance']  || row['meter_maintenance_fee']
                     || row['meter_maintenance']     || row['MeterMaintenanceFee'] || row['MeterMaintenance']    || '0.00';
     const penalty    = row['Penalty']               || row['penalty']            || '0.00';
     const totalAmount = (
-      parseFloat(waterFee.replace(/,/g, '')   || 0) +
+      parseFloat(waterFee) +
       parseFloat(installFee.replace(/,/g, '') || 0) +
       parseFloat(meterMaint.replace(/,/g, '') || 0) +
       parseFloat(penalty.replace(/,/g, '')    || 0)
@@ -682,7 +976,12 @@ function ToolsContent() {
         const sheetPayload = {
           headers: sheetHeaders,
           rows: bills.map(bill => [
-            ...BILL_COLS.map(col => bill[col] || ''),
+            ...BILL_COLS.map(col => {
+              if (col === 'Water Fee') {
+                return (parseFloat((bill[col] || '0').replace(/,/g, '') || 0) * 1.02).toFixed(2);
+              }
+              return bill[col] || '';
+            }),
             formatDate(dueDate),
             formatDate(disconDate),
           ]),
