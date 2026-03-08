@@ -1,29 +1,33 @@
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import pool from '../config/database.js';
 
 const router = express.Router();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_FILE = path.resolve(__dirname, '../sms-templates.json');
 
 // GET /api/templates
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    if (!fs.existsSync(TEMPLATES_FILE)) return res.json({});
-    const data = JSON.parse(fs.readFileSync(TEMPLATES_FILE, 'utf8'));
+    const result = await pool.query('SELECT key, value FROM sms_templates');
+    const data = {};
+    result.rows.forEach(row => { data[row.key] = row.value; });
     res.json(data);
-  } catch {
+  } catch (err) {
     res.status(500).json({ error: 'Failed to read templates.' });
   }
 });
 
 // POST /api/templates
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    fs.writeFileSync(TEMPLATES_FILE, JSON.stringify(req.body, null, 2), 'utf8');
+    const entries = Object.entries(req.body);
+    for (const [key, value] of entries) {
+      await pool.query(
+        `INSERT INTO sms_templates (key, value) VALUES ($1, $2)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+        [key, value]
+      );
+    }
     res.json({ success: true });
-  } catch {
+  } catch (err) {
     res.status(500).json({ error: 'Failed to save templates.' });
   }
 });

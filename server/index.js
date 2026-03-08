@@ -65,6 +65,14 @@ app.use(session({
   }
 }));
 
+// Auto-migrate: ensure sms_templates table exists
+pool.query(`
+  CREATE TABLE IF NOT EXISTS sms_templates (
+    key VARCHAR(50) PRIMARY KEY,
+    value TEXT NOT NULL
+  )
+`).catch(err => console.error('[Migration] sms_templates table error:', err.message));
+
 // Auto-migrate: ensure employees table and email column exist
 pool.query(`
   CREATE TABLE IF NOT EXISTS employees (
