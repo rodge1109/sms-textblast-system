@@ -799,7 +799,7 @@ function ToolsContent() {
   const abortRef = useRef(false);
 
   // â”€â”€ SMS Templates â”€â”€
-  const DEFAULT_BILL_TPL = `Dear {name}, your bill dated {datePosted} has been posted. Consumption: {consumption} cu.m. Water Fee: Php {waterFee}. Installation Fee: Php {installFee}. Meter Maintenance: Php {meterMaint}. Total Amount Due: Php {totalAmount}. Due Date: {dueDate}. Disconnection Date: {disconDate}. Please pay on time. Thank you.`;
+  const DEFAULT_BILL_TPL = `BogoWD(free,no reply): Your bill (Conscode: {conscode}) for THIS MONTH is {totalAmount}. Consumed {consumption} cubic. Due Date {dueDate}. Disconnection Date {disconDate}.`;
   const DEFAULT_DUE_TPL  = `Dear {name}, this is a reminder that your water bill is due on {date}. Water Fee: Php {waterFee}. Installation Fee: Php {installFee}. Meter Maintenance: Php {meterMaint}. Total Amount Due: Php {totalAmount}. Please pay on time to avoid disconnection. Thank you.`;
   const DEFAULT_DISC_TPL = `Dear {name}, your account is scheduled for disconnection on {date} due to unpaid balance. Water Fee: Php {waterFee}. Installation Fee: Php {installFee}. Meter Maintenance Fee: Php {meterMaint}. Penalty: Php {penalty}. Total Amount Due: Php {totalAmount}. Please settle immediately. Thank you.`;
   const DEFAULT_ADV_TPL  = `Dear {name}, this is an advisory from CPMPC. {advisory} For inquiries, please contact our office. Thank you.`;
