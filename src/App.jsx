@@ -848,7 +848,7 @@ export default function RestaurantApp() {
 
         {/* Mobile Bottom Navigation */}
         {!isShowingLoginPage && (
-          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50 pb-safe">
+          <nav className={`fixed bottom-0 left-0 right-0 md:hidden z-50 pb-safe ${currentPage === 'smsblast' && smsActiveMenu === 'service' ? 'bg-blue-950 border-t border-blue-900' : 'bg-white border-t border-gray-200'}`}>
             <div className="flex justify-center items-center py-2">
               {currentPage === 'smsblast' && smsActiveMenu === 'service' ? (
                 <button
@@ -858,7 +858,7 @@ export default function RestaurantApp() {
                     sessionStorage.removeItem('authToken');
                     setCurrentPage('smsblast');
                   }}
-                  className="flex flex-col items-center px-4 py-1 text-blue-600 hover:text-blue-800 transition-colors"
+                  className="flex flex-col items-center px-4 py-1 text-white hover:text-white/70 transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
