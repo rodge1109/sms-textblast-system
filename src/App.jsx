@@ -848,7 +848,7 @@ export default function RestaurantApp() {
 
         {/* Mobile Bottom Navigation */}
         {!isShowingLoginPage && (
-          <nav className={`fixed bottom-0 left-0 right-0 md:hidden z-50 pb-safe ${currentPage === 'smsblast' && smsActiveMenu === 'service' ? 'bg-blue-950 border-t border-blue-900' : 'bg-white border-t border-gray-200'}`}>
+          <nav className={`fixed bottom-0 left-0 right-0 md:hidden z-50 pb-safe ${currentPage === 'smsblast' && smsActiveMenu === 'service' ? 'bg-blue-950/60 backdrop-blur-md border-t border-white/10' : 'bg-white border-t border-gray-200'}`}>
             <div className="flex justify-center items-center py-2">
               {currentPage === 'smsblast' && smsActiveMenu === 'service' ? (
                 <button
