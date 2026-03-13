@@ -1,5 +1,5 @@
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, ChevronRight, Check, X, Search, User, UtensilsCrossed, ShoppingBag, Truck, LayoutGrid, ArrowLeft, Receipt, Edit3 } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, ChevronRight, Check, X, Search, User, UtensilsCrossed, ShoppingBag, Truck, LayoutGrid, ArrowLeft, Receipt, Edit3, Droplets } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -76,8 +76,56 @@ const fallbackMenuData = [
 
 const categories = ['All', 'Combos', 'Pizza', 'Burgers', 'Pasta', 'Salads', 'Drinks', 'Desserts'];
 
+// Splash Screen Component
+function SplashScreen({ visible }) {
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-b from-cyan-400 via-blue-600 to-blue-950 transition-opacity duration-700"
+      style={{ opacity: visible ? 1 : 0, pointerEvents: visible ? 'all' : 'none' }}
+    >
+      {/* Glassy card */}
+      <div className="flex flex-col items-center gap-5 bg-white/10 backdrop-blur-md rounded-3xl px-12 py-10 shadow-2xl">
+        {/* Rotating water icon */}
+        <div className="relative flex items-center justify-center">
+          {/* Outer ring */}
+          <div className="absolute w-28 h-28 rounded-full border-4 border-white/20 border-t-white/80 animate-spin" style={{ animationDuration: '1.4s' }} />
+          {/* Inner icon */}
+          <Droplets className="w-14 h-14 text-white drop-shadow-lg" strokeWidth={1.5} />
+        </div>
+
+        <div className="text-center">
+          <p className="text-white/70 text-sm font-medium tracking-widest uppercase mb-1">Bogo Water District</p>
+          <h1 className="text-3xl font-bold text-white drop-shadow">SMS TextBlast</h1>
+          <p className="text-white/60 text-xs mt-1 tracking-wide">Online Services System</p>
+        </div>
+
+        {/* Loading dots */}
+        <div className="flex gap-2 mt-1">
+          {[0, 1, 2].map(i => (
+            <div
+              key={i}
+              className="w-2 h-2 rounded-full bg-white/70 animate-bounce"
+              style={{ animationDelay: `${i * 0.18}s`, animationDuration: '0.9s' }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main App Component
 export default function RestaurantApp() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashVisible, setSplashVisible] = useState(true);
+
+  useEffect(() => {
+    // Start fade-out after 2.2s, unmount after transition
+    const fadeTimer = setTimeout(() => setSplashVisible(false), 2200);
+    const removeTimer = setTimeout(() => setShowSplash(false), 2900);
+    return () => { clearTimeout(fadeTimer); clearTimeout(removeTimer); };
+  }, []);
+
   const [cartItems, setCartItems] = useState([]);
   const [currentPage, setCurrentPage] = useState('smsblast');
   const [smsActiveMenu, setSmsActiveMenu] = useState('dashboard');
@@ -493,6 +541,7 @@ export default function RestaurantApp() {
 
   return (
     <CartContext.Provider value={contextValue}>
+      {showSplash && <SplashScreen visible={splashVisible} />}
       <style>{`
         @keyframes fadeIn {
           from {
