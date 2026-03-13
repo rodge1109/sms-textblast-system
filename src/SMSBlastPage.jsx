@@ -2,18 +2,26 @@
 import {
   LayoutDashboard,
   Users,
-  Receipt,
-  Wrench,
-  ScrollText,
+  FileText,
+  Settings2,
+  List,
   UserCog,
   CheckCircle,
   XCircle,
   AlertCircle,
   Eye,
-  Bot,
+  MessageSquare,
   Send,
   TrendingUp,
   Zap,
+  LayoutGrid,
+  CreditCard,
+  AlertTriangle,
+  ClipboardList,
+  Home,
+  RefreshCw,
+  Droplets,
+  Wrench,
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -24,11 +32,12 @@ const API_BASE = import.meta.env.VITE_API_URL ||
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'consumers', label: 'Consumers', icon: Users },
-  { id: 'bills',     label: 'Bills',     icon: Receipt },
-  { id: 'tools',     label: 'Tools',     icon: Wrench },
-  { id: 'logs',      label: 'Logs',      icon: ScrollText },
+  { id: 'bills',     label: 'Bills',     icon: FileText },
+  { id: 'tools',     label: 'Tools',     icon: Settings2 },
+  { id: 'logs',      label: 'Logs',      icon: List },
   { id: 'users',     label: 'Users',     icon: UserCog },
-  { id: 'chatbot',   label: 'Chat Bot',  icon: Bot },
+  { id: 'chatbot',   label: 'Chat Bot',  icon: MessageSquare },
+  { id: 'service',   label: 'Service',   icon: LayoutGrid },
 ];
 
 function DashboardContent() {
@@ -1987,6 +1996,312 @@ function ChatBotContent() {
   );
 }
 
+const SERVICE_CONFIGS = [
+  {
+    icon: FileText, label: 'View Bill', desc: 'Check your current water bill',
+    tabName: 'BillInquiries',
+    headers: ['Name', 'Conscode', 'Account Number', 'Notes'],
+    fields: [
+      { key: 'name',          label: 'Full Name',       type: 'text',     required: true  },
+      { key: 'conscode',      label: 'Conscode',        type: 'text',     required: true  },
+      { key: 'accountNumber', label: 'Account Number',  type: 'text',     required: false },
+      { key: 'notes',         label: 'Notes',           type: 'textarea', required: false },
+    ],
+  },
+  {
+    icon: CreditCard, label: 'Pay Water Bill', desc: 'Pay your outstanding balance',
+    tabName: 'PaymentRecords',
+    headers: ['Name', 'Conscode', 'Account Number', 'Amount Paid', 'Payment Date', 'Mode of Payment', 'Reference Number', 'Remarks'],
+    fields: [
+      { key: 'name',            label: 'Full Name',        type: 'text',     required: true  },
+      { key: 'conscode',        label: 'Conscode',         type: 'text',     required: false },
+      { key: 'accountNumber',   label: 'Account Number',   type: 'text',     required: false },
+      { key: 'amountPaid',      label: 'Amount Paid (₱)',  type: 'number',   required: true  },
+      { key: 'paymentDate',     label: 'Payment Date',     type: 'date',     required: true  },
+      { key: 'modeOfPayment',   label: 'Mode of Payment',  type: 'select',   required: true,
+        options: ['Cash', 'GCash', 'Maya', 'Bank Transfer', 'Other'] },
+      { key: 'referenceNumber', label: 'Reference Number', type: 'text',     required: false },
+      { key: 'remarks',         label: 'Remarks',          type: 'textarea', required: false },
+    ],
+  },
+  {
+    icon: AlertTriangle, label: 'Report a Leak', desc: 'Report water leak in your area',
+    tabName: 'LeakReports',
+    headers: ['Name', 'Contact Number', 'Address', 'Location of Leak', 'Description', 'Urgency'],
+    fields: [
+      { key: 'name',           label: 'Full Name',        type: 'text',     required: true  },
+      { key: 'contactNumber',  label: 'Contact Number',   type: 'text',     required: true  },
+      { key: 'address',        label: 'Address',          type: 'text',     required: true  },
+      { key: 'leakLocation',   label: 'Location of Leak', type: 'map',      required: true  },
+      { key: 'description',    label: 'Description',      type: 'textarea', required: true  },
+      { key: 'urgency',        label: 'Urgency',          type: 'select',   required: true,
+        options: ['Low', 'Medium', 'High — Needs Immediate Attention'] },
+    ],
+  },
+  {
+    icon: ClipboardList, label: 'Billing Concerns', desc: 'Raise a billing dispute or inquiry',
+    tabName: 'BillingConcerns',
+    headers: ['Name', 'Account Number', 'Contact Number', 'Concern Type', 'Description'],
+    fields: [
+      { key: 'name',          label: 'Full Name',      type: 'text',     required: true  },
+      { key: 'accountNumber', label: 'Account Number', type: 'text',     required: true  },
+      { key: 'contactNumber', label: 'Contact Number', type: 'text',     required: true  },
+      { key: 'concernType',   label: 'Concern Type',   type: 'select',   required: true,
+        options: ['Overcharge', 'Incorrect Meter Reading', 'Penalty Dispute', 'Duplicate Bill', 'Others'] },
+      { key: 'description',   label: 'Description',    type: 'textarea', required: true  },
+    ],
+  },
+  {
+    icon: Home, label: 'New Service Application', desc: 'Apply for a new water connection',
+    tabName: 'ServiceApplications',
+    headers: ['Applicant Name', 'Address', 'Contact Number', 'Email', 'Property Type', 'Connection Type'],
+    fields: [
+      { key: 'applicantName',  label: 'Applicant Name',  type: 'text',   required: true  },
+      { key: 'address',        label: 'Address',         type: 'text',   required: true  },
+      { key: 'contactNumber',  label: 'Contact Number',  type: 'text',   required: true  },
+      { key: 'email',          label: 'Email',           type: 'email',  required: false },
+      { key: 'propertyType',   label: 'Property Type',   type: 'select', required: true,
+        options: ['Residential', 'Commercial', 'Industrial'] },
+      { key: 'connectionType', label: 'Connection Type', type: 'select', required: true,
+        options: ['New Connection', 'Transfer of Account', 'Additional Connection'] },
+    ],
+  },
+  {
+    icon: RefreshCw, label: 'Reconnect Service', desc: 'Request service reconnection',
+    tabName: 'ReconnectRequests',
+    headers: ['Name', 'Conscode', 'Account Number', 'Contact Number', 'Address', 'Reason for Disconnection'],
+    fields: [
+      { key: 'name',          label: 'Full Name',                type: 'text',     required: true  },
+      { key: 'conscode',      label: 'Conscode',                 type: 'text',     required: false },
+      { key: 'accountNumber', label: 'Account Number',           type: 'text',     required: false },
+      { key: 'contactNumber', label: 'Contact Number',           type: 'text',     required: true  },
+      { key: 'address',       label: 'Address',                  type: 'text',     required: true  },
+      { key: 'reason',        label: 'Reason for Disconnection', type: 'textarea', required: true  },
+    ],
+  },
+  {
+    icon: Droplets, label: 'Low Pressure / No Water Report', desc: 'Report water supply issues',
+    tabName: 'WaterIssues',
+    headers: ['Name', 'Contact Number', 'Address', 'Issue Type', 'Date/Time Noticed', 'Description'],
+    fields: [
+      { key: 'name',          label: 'Full Name',         type: 'text',           required: true  },
+      { key: 'contactNumber', label: 'Contact Number',    type: 'text',           required: true  },
+      { key: 'address',       label: 'Address',           type: 'text',           required: true  },
+      { key: 'issueType',     label: 'Issue Type',        type: 'select',         required: true,
+        options: ['Low Water Pressure', 'No Water Supply', 'Discolored Water', 'Other'] },
+      { key: 'dateNoticed',   label: 'Date/Time Noticed', type: 'datetime-local', required: true  },
+      { key: 'description',   label: 'Description',       type: 'textarea',       required: false },
+    ],
+  },
+  {
+    icon: MessageSquare, label: 'Customer Support Chat', desc: 'Send a message to our support team',
+    tabName: 'SupportRequests',
+    headers: ['Name', 'Contact Number', 'Subject', 'Message'],
+    fields: [
+      { key: 'name',          label: 'Full Name',      type: 'text',     required: true },
+      { key: 'contactNumber', label: 'Contact Number', type: 'text',     required: true },
+      { key: 'subject',       label: 'Subject',        type: 'text',     required: true },
+      { key: 'message',       label: 'Message',        type: 'textarea', required: true },
+    ],
+  },
+  {
+    icon: Wrench, label: 'Request a Plumber', desc: 'Request a plumber for repairs or installation',
+    tabName: 'PlumberRequests',
+    headers: ['Full Name', 'Address', 'Phone Number', 'Email', 'Nature of Repair', 'Urgency'],
+    fields: [
+      { key: 'name',          label: 'Full Name',         type: 'text',     required: true  },
+      { key: 'address',       label: 'Address',           type: 'text',     required: true  },
+      { key: 'phoneNumber',   label: 'Phone Number',      type: 'text',     required: true  },
+      { key: 'email',         label: 'Email Address',     type: 'email',    required: true  },
+      { key: 'natureRepair',  label: 'Nature of Repair',  type: 'textarea', required: true  },
+      { key: 'urgency',       label: 'Urgency',           type: 'select',   required: true,
+        options: ['Low — Schedule at convenience', 'Medium — Within the week', 'High — Urgent, needs immediate attention'] },
+    ],
+  },
+];
+
+function LocationPicker({ value, onChange }) {
+  const [loading, setLoading]   = useState(false);
+  const [coords, setCoords]     = useState(null);
+  const [geoError, setGeoError] = useState('');
+
+  function pinMyLocation() {
+    setLoading(true); setGeoError('');
+    if (!navigator.geolocation) { setGeoError('Geolocation not supported.'); setLoading(false); return; }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords: { latitude: lat, longitude: lng } }) => {
+        setCoords({ lat, lng });
+        onChange(`${lat.toFixed(6)}, ${lng.toFixed(6)} — https://maps.google.com/?q=${lat},${lng}`);
+        setLoading(false);
+      },
+      (err) => { setGeoError('Could not get location: ' + err.message); setLoading(false); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <input type="text" value={value} onChange={e => { onChange(e.target.value); setCoords(null); }}
+        placeholder="Describe the leak location, or pin it below"
+        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400" />
+      <button type="button" onClick={pinMyLocation} disabled={loading}
+        className="flex items-center gap-1.5 text-xs bg-blue-50 hover:bg-blue-100 border border-blue-300 text-blue-700 font-semibold px-3 py-1.5 rounded transition-colors disabled:opacity-50">
+        {loading ? '⏳ Getting location…' : '📍 Pin My Current Location'}
+      </button>
+      {geoError && <p className="text-xs text-red-500">{geoError}</p>}
+      {coords && (
+        <div className="rounded overflow-hidden border border-gray-200">
+          <iframe title="Pinned Location" width="100%" height="180" frameBorder="0"
+            src={`https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=16&output=embed`} allowFullScreen />
+          <p className="text-xs text-gray-500 px-2 py-1 bg-gray-50">📍 {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ServiceFormScreen({ config, onClose }) {
+  const [form, setForm]       = useState(Object.fromEntries(config.fields.map(f => [f.key, ''])));
+  const [submitting, setSub]  = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError]     = useState('');
+
+  const inputCls = 'w-full border border-gray-200 bg-white text-gray-800 placeholder-gray-400 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900';
+  const labelCls = 'block text-xs font-semibold text-blue-900 mb-1 uppercase tracking-wide';
+
+  async function handleSubmit(e) {
+    e.preventDefault(); setError('');
+    const rowData = config.fields.map(f => form[f.key] || '');
+    setSub(true);
+    try {
+      const res  = await fetch(`${API_BASE}/sheets/service-request`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
+      });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch {
+        throw new Error(`Server error (${res.status}): ${text.replace(/<[^>]+>/g, '').trim().slice(0, 200)}`);
+      }
+      if (!data.success) throw new Error(data.error || 'Submission failed.');
+      setSuccess(true);
+    } catch (err) { setError(err.message); }
+    setSub(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-gray-50 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+      <div className="min-h-full flex flex-col max-w-lg mx-auto w-full">
+        {/* Top bar */}
+        <div className="bg-blue-900 px-5 py-4 flex items-center gap-3">
+          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="flex items-center gap-2">
+            <config.icon className="w-5 h-5 text-white/80" strokeWidth={1.5} />
+            <h2 className="text-base font-bold text-white">{config.label}</h2>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 px-5 py-6">
+          {config.desc && (
+            <p className="text-sm text-gray-500 mb-6 leading-relaxed">{config.desc}</p>
+          )}
+
+        {success ? (
+          <div className="flex flex-col items-center justify-center text-center space-y-3 py-12">
+            <div className="bg-blue-900 rounded-full p-4 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-xl font-bold text-blue-900">Request Submitted</p>
+            <p className="text-sm text-gray-500">Your request has been recorded and forwarded to our team.</p>
+            <button onClick={onClose} className="mt-4 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors">
+              Back to Services
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {config.fields.map(f => (
+              <div key={f.key}>
+                <label className={labelCls}>
+                  {f.label}{f.required && <span className="text-red-500 ml-0.5">*</span>}
+                </label>
+                {f.type === 'textarea' ? (
+                  <textarea rows={3} required={f.required} value={form[f.key]}
+                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    className={inputCls} />
+                ) : f.type === 'select' ? (
+                  <select required={f.required} value={form[f.key]}
+                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    className={inputCls}>
+                    <option value="">— Select —</option>
+                    {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : f.type === 'map' ? (
+                  <LocationPicker value={form[f.key]} onChange={v => setForm(p => ({ ...p, [f.key]: v }))} />
+                ) : (
+                  <input type={f.type} required={f.required} value={form[f.key]}
+                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    className={inputCls} />
+                )}
+              </div>
+            ))}
+            {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+            <div className="flex gap-3 pt-2 pb-6">
+              <button type="submit" disabled={submitting}
+                className="flex-1 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-semibold text-sm py-3 rounded-lg transition-colors">
+                {submitting ? 'Submitting…' : 'Submit Request'}
+              </button>
+              <button type="button" onClick={onClose}
+                className="flex-1 border border-gray-300 text-gray-600 font-semibold text-sm py-3 rounded-lg hover:bg-gray-100 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ServiceDashboardContent() {
+  const [activeConfig, setActiveConfig] = useState(null);
+
+  return (
+    <div className="min-h-full p-6 max-w-4xl mx-auto bg-gradient-to-b from-cyan-400 via-blue-600 to-blue-950">
+      <div className="mb-6 text-center">
+        <img src="/assets/images/header1.png" alt="Bogo Water District Logo" className="mx-auto mb-3" style={{ width: 100, height: 100, objectFit: 'contain' }} />
+        <h2 className="text-2xl font-bold text-white tracking-wide">Service Dashboard</h2>
+        <p className="inline-block text-sm text-white font-semibold mt-2 px-4 py-1 bg-blue-600 rounded-full">Bogo Water District — Online Services</p>
+        <p className="text-xs text-white/60 mt-3 leading-relaxed max-w-md mx-auto">
+          Select a service below to submit a request. Fill in the required fields and tap <span className="text-white font-semibold">Submit</span> — your request will be recorded and forwarded to our team. For urgent concerns, please call our office directly.
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-[10px]">
+        {SERVICE_CONFIGS.map(cfg => (
+          <button
+            key={cfg.label}
+            onClick={() => setActiveConfig(cfg)}
+            className="flex flex-col items-center justify-center text-center p-2 aspect-square rounded-2xl bg-white/10 backdrop-blur-md transition-all duration-150 shadow-sm hover:bg-white/20 hover:shadow-lg"
+          >
+            <cfg.icon className="w-[29px] h-[29px] text-white mb-2" strokeWidth={1.5} />
+            <p className="text-xs font-semibold leading-tight text-white">{cfg.label}</p>
+          </button>
+        ))}
+      </div>
+      {activeConfig && (
+        <ServiceFormScreen config={activeConfig} onClose={() => setActiveConfig(null)} />
+      )}
+    </div>
+  );
+}
+
 const contentMap = {
   dashboard: DashboardContent,
   consumers: ConsumersContent,
@@ -1995,22 +2310,28 @@ const contentMap = {
   logs:      LogsContent,
   users:     UsersContent,
   chatbot:   ChatBotContent,
+  service:   ServiceDashboardContent,
 };
 
-export default function SMSBlastPage({ employee, authToken }) {
+export default function SMSBlastPage({ employee, authToken, onMenuChange }) {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const ActiveContent = contentMap[activeMenu];
+
+  function handleMenuChange(id) {
+    setActiveMenu(id);
+    onMenuChange?.(id);
+  }
 
   return (
     <div className="flex h-full">
       {/* Sidebar */}
-      <aside className="flex flex-col items-center w-[100px] md:w-[280px] bg-gray-900 border-r border-gray-700 shrink-0 py-4 gap-1">
+      <aside className={`flex-col items-center w-[100px] md:w-[280px] bg-gray-900 border-r border-gray-700 shrink-0 py-4 gap-1 ${activeMenu === 'service' ? 'hidden md:flex' : 'flex'}`}>
         {menuItems.map(({ id, label, icon: Icon }) => {
           const isActive = activeMenu === id;
           return (
             <button
               key={id}
-              onClick={() => setActiveMenu(id)}
+              onClick={() => handleMenuChange(id)}
               className={`relative flex flex-col items-center justify-center w-[84px] md:w-[248px] h-14 md:h-16 rounded-xl gap-1 transition-all duration-150
                 ${isActive
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
@@ -2019,7 +2340,7 @@ export default function SMSBlastPage({ employee, authToken }) {
               title={label}
             >
               <div className="relative flex items-center justify-center">
-                <Icon className="w-6 h-6 md:w-8 md:h-8" />
+                <Icon className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.5} />
                 {id === 'chatbot' && (
                   <span className="absolute left-full ml-1 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full leading-none pointer-events-none whitespace-nowrap">
                     New Feature

@@ -80,6 +80,7 @@ const categories = ['All', 'Combos', 'Pizza', 'Burgers', 'Pasta', 'Salads', 'Dri
 export default function RestaurantApp() {
   const [cartItems, setCartItems] = useState([]);
   const [currentPage, setCurrentPage] = useState('smsblast');
+  const [smsActiveMenu, setSmsActiveMenu] = useState('dashboard');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCart, setShowCart] = useState(false);
@@ -583,7 +584,7 @@ export default function RestaurantApp() {
         }
       `}</style>
       {/* ── Top accent bar ── */}
-      <div className="fixed top-0 left-0 right-0 z-[45] bg-gray-900 flex items-center justify-between px-4 md:px-8" style={{ height: 40 }}>
+      <div className={`fixed top-0 left-0 right-0 z-[45] bg-gray-900 items-center justify-between px-4 md:px-8 ${currentPage === 'smsblast' && smsActiveMenu === 'service' ? 'hidden' : 'flex'}`} style={{ height: 40 }}>
         {/* Date & Time */}
         <div className="flex items-center gap-3 text-gray-300" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
           <span className="text-xs font-medium">
@@ -605,24 +606,27 @@ export default function RestaurantApp() {
         )}
       </div>
 
-      <Header
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        setShowCart={setShowCart}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        customer={customer}
-        onLogout={handleLogout}
-        employee={employee}
-        onEmployeeLogout={handleEmployeeLogout}
-      />
-
-      {/* ── Blue sub-header bar (smsblast + logged in only) ── */}
-      {currentPage === 'smsblast' && employee && (
-        <div className="fixed top-[116px] md:top-[124px] left-0 right-0 z-40 shadow-md" style={{ height: 30, background: 'linear-gradient(90deg, #93c5fd 0%, #3b82f6 40%, #1e3a8a 100%)' }} />
+      {!(currentPage === 'smsblast' && smsActiveMenu === 'service') && (
+        <>
+          <Header
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            setShowCart={setShowCart}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            customer={customer}
+            onLogout={handleLogout}
+            employee={employee}
+            onEmployeeLogout={handleEmployeeLogout}
+          />
+          {/* ── Blue sub-header bar (smsblast + logged in only) ── */}
+          {currentPage === 'smsblast' && employee && (
+            <div className="fixed top-[116px] md:top-[124px] left-0 right-0 z-40 shadow-md" style={{ height: 30, background: 'linear-gradient(90deg, #93c5fd 0%, #3b82f6 40%, #1e3a8a 100%)' }} />
+          )}
+        </>
       )}
 
-      <div className={`${currentPage === 'pos' ? 'bg-gray-200 h-screen overflow-hidden pt-[116px] md:pt-[124px] pb-16 md:pb-0' : currentPage === 'smsblast' ? `bg-white h-screen overflow-hidden ${employee ? 'pt-[146px] md:pt-[154px]' : 'pt-[116px] md:pt-[124px]'}` : currentPage === 'home' ? 'bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 min-h-screen pb-16 md:pb-0' : 'bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 min-h-screen pb-16 md:pb-0 pt-[116px] md:pt-[124px]'}`}>
+      <div className={`${currentPage === 'pos' ? 'bg-gray-200 h-screen overflow-hidden pt-[116px] md:pt-[124px] pb-16 md:pb-0' : currentPage === 'smsblast' ? `bg-white h-screen overflow-hidden ${smsActiveMenu === 'service' ? 'pt-0' : employee ? 'pt-[146px] md:pt-[154px]' : 'pt-[116px] md:pt-[124px]'}` : currentPage === 'home' ? 'bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 min-h-screen pb-16 md:pb-0' : 'bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 min-h-screen pb-16 md:pb-0 pt-[116px] md:pt-[124px]'}`}>
         {currentPage === 'home' && (
           <HomePage
             setCurrentPage={setCurrentPage}
@@ -770,7 +774,7 @@ export default function RestaurantApp() {
         {/* SMS Blast Page */}
         {currentPage === 'smsblast' && (
           employee ? (
-            <SMSBlastPage employee={employee} authToken={authToken} />
+            <SMSBlastPage employee={employee} authToken={authToken} onMenuChange={setSmsActiveMenu} />
           ) : (
             <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )
@@ -797,20 +801,37 @@ export default function RestaurantApp() {
         {!isShowingLoginPage && (
           <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50 pb-safe">
             <div className="flex justify-center items-center py-2">
-              <button
-                onClick={() => {
-                  setEmployee(null);
-                  sessionStorage.removeItem('employee');
-                  sessionStorage.removeItem('authToken');
-                  setCurrentPage('smsblast');
-                }}
-                className="flex flex-col items-center px-4 py-1 text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span className="text-xs font-medium">Logout</span>
-              </button>
+              {currentPage === 'smsblast' && smsActiveMenu === 'service' ? (
+                <button
+                  onClick={() => {
+                    setEmployee(null);
+                    sessionStorage.removeItem('employee');
+                    sessionStorage.removeItem('authToken');
+                    setCurrentPage('smsblast');
+                  }}
+                  className="flex flex-col items-center px-4 py-1 text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  <span className="text-xs font-medium">Login</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setEmployee(null);
+                    sessionStorage.removeItem('employee');
+                    sessionStorage.removeItem('authToken');
+                    setCurrentPage('smsblast');
+                  }}
+                  className="flex flex-col items-center px-4 py-1 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span className="text-xs font-medium">Logout</span>
+                </button>
+              )}
             </div>
           </nav>
         )}

@@ -122,4 +122,53 @@ router.post('/latest-bill/replace', async (req, res) => {
   }
 });
 
+// POST /api/sheets/service-request
+// Body: { tabName, headers: string[], rowData: string[] }
+// Creates tab if it doesn't exist, appends row with timestamp prepended.
+router.post('/service-request', async (req, res) => {
+  try {
+    const { tabName, headers, rowData } = req.body;
+    if (!tabName || !Array.isArray(headers) || !Array.isArray(rowData)) {
+      return res.status(400).json({ success: false, error: 'tabName, headers, and rowData are required.' });
+    }
+
+    const sheetId = process.env.GOOGLE_LATEST_BILL_SHEET_ID || DEFAULT_SHEET_ID;
+    const sheets  = getWriteSheets();
+
+    // Check existing tabs
+    const meta           = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
+    const existingSheets = meta.data.sheets.map(s => s.properties.title);
+
+    if (!existingSheets.includes(tabName)) {
+      // Create the tab
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: sheetId,
+        requestBody: { requests: [{ addSheet: { properties: { title: tabName } } }] },
+      });
+      // Write header row
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: sheetId,
+        range: `${tabName}!A1`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [['Timestamp', ...headers]] },
+      });
+    }
+
+    // Append data row (timestamp first)
+    const timestamp = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: sheetId,
+      range: `${tabName}!A1`,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [[timestamp, ...rowData]] },
+    });
+
+    return res.json({ success: true, tabName });
+  } catch (err) {
+    console.error('Service request save error:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
