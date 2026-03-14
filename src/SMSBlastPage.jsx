@@ -2000,7 +2000,7 @@ const SERVICE_CONFIGS = [
   {
     icon: FileText, label: 'View Bill', desc: 'Check your current water bill',
     tabName: 'BillInquiries',
-    headers: ['Name', 'Conscode', 'Account Number', 'Notes'],
+    headers: ['Name', 'Conscode', 'Account Number', 'Notes', 'Status'],
     fields: [
       { key: 'name',          label: 'Full Name',       type: 'text',     required: true  },
       { key: 'conscode',      label: 'Conscode',        type: 'text',     required: true  },
@@ -2183,6 +2183,7 @@ function ServiceFormScreen({ config, onClose }) {
       }
       
       setSub(true);
+      let billStatus = 'Failed';
       try {
         // Fetch the latest bill data
         const res = await fetch(`${API_BASE}/sheets/latest-bill`);
@@ -2204,6 +2205,13 @@ function ServiceFormScreen({ config, onClose }) {
         const matchedRow = rows.find(row => row[conscodeIndex] && row[conscodeIndex].toString().trim().toLowerCase() === conscode.toLowerCase());
         
         if (!matchedRow) {
+          // Bill not found - save with Failed status and return
+          billStatus = 'Failed';
+          const rowData = [form.name || '', form.conscode || '', form.accountNumber || '', form.notes || '', billStatus];
+          await fetch(`${API_BASE}/sheets/service-request`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
+          });
           setBillNotFound(true);
           setSub(false);
           return;
@@ -2215,8 +2223,27 @@ function ServiceFormScreen({ config, onClose }) {
           bill[header] = matchedRow[index] || '';
         });
         
+        // Bill found successfully - save with Success status
+        billStatus = 'Success';
+        const rowData = [form.name || '', form.conscode || '', form.accountNumber || '', form.notes || '', billStatus];
+        await fetch(`${API_BASE}/sheets/service-request`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
+        });
+        
         setBillData(bill);
       } catch (err) { 
+        // Error occurred - save with Failed status
+        billStatus = 'Failed';
+        const rowData = [form.name || '', form.conscode || '', form.accountNumber || '', form.notes || '', billStatus];
+        try {
+          await fetch(`${API_BASE}/sheets/service-request`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
+          });
+        } catch (saveErr) {
+          console.error('Failed to save inquiry:', saveErr);
+        }
         setError(err.message); 
       }
       setSub(false);
@@ -2244,9 +2271,21 @@ function ServiceFormScreen({ config, onClose }) {
   
   // Display bill if found
   if (billData) {
+    // Parse currency values and calculate total
+    const parseAmount = (val) => {
+      if (!val) return 0;
+      const str = String(val).replace(/[^\d.]/g, '');
+      return parseFloat(str) || 0;
+    };
+    
+    const waterFee = parseAmount(billData['Water Fee'] || billData['water_fee'] || billData['WaterFee']);
+    const installFee = parseAmount(billData['Installation Fee'] || billData['installation_fee'] || billData['InstallationFee']);
+    const meterMaint = parseAmount(billData['Meter Maintenance'] || billData['meter_maintenance'] || billData['MeterMaintenance']);
+    const total = (waterFee + installFee + meterMaint).toFixed(2);
+    
     return (
-      <div className="fixed inset-0 z-[200] bg-gray-50 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
-        <div className="min-h-full flex flex-col max-w-lg mx-auto w-full">
+      <div className="fixed inset-0 z-[200] bg-gray-100 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+        <div className="min-h-full flex flex-col max-w-sm mx-auto w-full">
           {/* Top bar */}
           <div className="bg-gradient-to-r from-cyan-400 to-blue-950 px-5 py-4 flex items-center gap-3">
             <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
@@ -2260,15 +2299,72 @@ function ServiceFormScreen({ config, onClose }) {
             </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 px-5 py-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-              {Object.entries(billData).map(([key, value]) => (
-                <div key={key} className="flex justify-between items-start gap-4">
-                  <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">{key}:</label>
-                  <div className="text-sm text-gray-900 font-medium text-right flex-1 break-words">{value || '—'}</div>
+          {/* Content - Receipt Style */}
+          <div className="flex-1 px-4 py-6">
+            {/* Receipt Paper */}
+            <div 
+              className="mx-auto max-w-xs rounded-sm shadow-lg p-6 border border-yellow-100 font-mono text-sm text-center"
+              style={{
+                backgroundImage: `
+                  repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.02) 1px, rgba(0,0,0,0.02) 2px),
+                  repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0,0,0,0.01) 1px, rgba(0,0,0,0.01) 2px)
+                `,
+                backgroundColor: '#fffdf7',
+              }}
+            >
+              {/* Header */}
+              <div className="mb-4 pb-3 border-b-2 border-dashed border-gray-400">
+                <p className="font-bold text-lg tracking-wider">WATER BILL</p>
+                <p className="text-xs text-gray-600 mt-1">Billing Statement</p>
+              </div>
+
+              {/* Customer Info */}
+              <div className="mb-4 pb-3 border-b border-dashed border-gray-300 text-left space-y-1">
+                <p><span className="font-semibold">Name:</span> <span className="float-right">{billData['Name'] || billData['name'] || '—'}</span></p>
+                <p><span className="font-semibold">Conscode:</span> <span className="float-right">{billData['Conscode'] || billData['conscode'] || '—'}</span></p>
+                {(billData['Account Number'] || billData['account_number']) && (
+                  <p><span className="font-semibold">Account:</span> <span className="float-right">{billData['Account Number'] || billData['account_number']}</span></p>
+                )}
+              </div>
+
+              {/* Consumption & Important Fields */}
+              {(billData['Consumption'] || billData['consumption']) && (
+                <div className="mb-4 pb-3 border-b border-dashed border-gray-300 text-left">
+                  <p className="font-semibold">Consumption: <span className="float-right">{billData['Consumption'] || billData['consumption']} m³</span></p>
                 </div>
-              ))}
+              )}
+
+              {/* Charges */}
+              <div className="mb-4 pb-3 border-b-2 border-dashed border-gray-400 text-left space-y-2">
+                <p className="font-semibold text-center mb-2">CHARGES</p>
+                <p><span>Water Fee:</span> <span className="float-right">₱{waterFee.toFixed(2)}</span></p>
+                {installFee > 0 && (
+                  <p><span>Installation Fee:</span> <span className="float-right">₱{installFee.toFixed(2)}</span></p>
+                )}
+                {meterMaint > 0 && (
+                  <p><span>Meter Maintenance:</span> <span className="float-right">₱{meterMaint.toFixed(2)}</span></p>
+                )}
+              </div>
+
+              {/* Total */}
+              <div className="mb-4 pb-3 border-b-2 border-dashed border-gray-400">
+                <p className="text-lg font-bold">TOTAL: <span className="float-right">₱{total}</span></p>
+              </div>
+
+              {/* Dates */}
+              <div className="mb-4 text-left space-y-1 text-xs">
+                {(billData['Due Date'] || billData['due_date']) && (
+                  <p><span className="font-semibold">Due Date:</span> <span className="float-right">{billData['Due Date'] || billData['due_date']}</span></p>
+                )}
+                {(billData['Disconnection Date'] || billData['discon_date']) && (
+                  <p className="text-red-600"><span className="font-semibold">Cutoff Date:</span> <span className="float-right">{billData['Disconnection Date'] || billData['discon_date']}</span></p>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="pt-3 border-t-2 border-dashed border-gray-400 text-xs text-gray-600">
+                <p>Thank you for paying on time</p>
+              </div>
             </div>
             
             <div className="flex gap-3 pt-6 pb-6">
