@@ -171,4 +171,33 @@ router.post('/service-request', async (req, res) => {
   }
 });
 
+// GET /api/sheets/get-tab?tab=TabName
+// Returns { success, headers, rows } from any specified tab
+router.get('/get-tab', async (req, res) => {
+  try {
+    const tabName = req.query.tab;
+    if (!tabName) {
+      return res.status(400).json({ success: false, error: 'tab parameter is required' });
+    }
+
+    const targetSheetId = process.env.GOOGLE_LATEST_BILL_SHEET_ID || DEFAULT_SHEET_ID;
+    const sheets = getWriteSheets();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: targetSheetId,
+      range: tabName,
+    });
+
+    const values = response.data.values || [];
+    if (values.length === 0) {
+      return res.json({ success: true, headers: [], rows: [] });
+    }
+
+    const [headers, ...rows] = values;
+    return res.json({ success: true, headers, rows });
+  } catch (err) {
+    console.error('Get tab error:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

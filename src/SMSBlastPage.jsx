@@ -2027,7 +2027,7 @@ const SERVICE_CONFIGS = [
   {
     icon: AlertTriangle, label: 'Report a Leak', desc: 'Report water leak in your area',
     tabName: 'LeakReports',
-    headers: ['Name', 'Contact Number', 'Address', 'Location of Leak', 'Description', 'Urgency'],
+    headers: ['Name', 'Contact Number', 'Address', 'Location of Leak', 'Description', 'Urgency', 'Ticket Number'],
     fields: [
       { key: 'name',           label: 'Full Name',        type: 'text',     required: true  },
       { key: 'contactNumber',  label: 'Contact Number',   type: 'text',     required: true  },
@@ -2167,12 +2167,22 @@ function ServiceFormScreen({ config, onClose }) {
   const [error, setError]     = useState('');
   const [billData, setBillData] = useState(null);
   const [billNotFound, setBillNotFound] = useState(false);
+  const [ticketNumber, setTicketNumber] = useState('');
+  const [leakReportSubmitted, setLeakReportSubmitted] = useState(false);
 
   const inputCls = 'w-full border border-gray-200 bg-white text-gray-800 placeholder-gray-400 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900';
   const labelCls = 'block text-xs font-semibold text-blue-900 mb-1 uppercase tracking-wide';
 
+  // Generate ticket number for leak reports
+  const generateTicketNumber = () => {
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const random = Math.floor(Math.random() * 10000).toString().padStart(5, '0');
+    return `LEAK-${date}-${random}`;
+  };
+
   async function handleSubmit(e) {
-    e.preventDefault(); setError(''); setBillData(null); setBillNotFound(false);
+    e.preventDefault(); setError(''); setBillData(null); setBillNotFound(false); setLeakReportSubmitted(false);
     
     // Special handling for "View Bill" service
     if (config.label === 'View Bill') {
@@ -2245,6 +2255,90 @@ function ServiceFormScreen({ config, onClose }) {
           console.error('Failed to save inquiry:', saveErr);
         }
         setError(err.message); 
+      }
+      setSub(false);
+      return;
+    }
+    
+    // Special handling for "Report a Leak" service
+    if (config.label === 'Report a Leak') {
+      setSub(true);
+      try {
+        // Generate ticket number
+        const ticket = generateTicketNumber();
+        setTicketNumber(ticket);
+        
+        // Fetch Hotlines tab to get the LeakReports hotline
+        const hotlinesRes = await fetch(`${API_BASE}/sheets/get-tab?tab=Hotlines`);
+        const hotlinesText = await hotlinesRes.text();
+        let hotlinesData;
+        try { hotlinesData = JSON.parse(hotlinesText); } catch {
+          throw new Error('Failed to fetch hotlines data');
+        }
+        
+        // Look for LeakReports row in Hotlines tab
+        let hotlineNumber = '';
+        if (hotlinesData.success && hotlinesData.rows) {
+          const hotlineRow = hotlinesData.rows.find(row => 
+            row[0] && row[0].toString().toLowerCase().includes('leak')
+          );
+          if (hotlineRow && hotlineRow[2]) {
+            hotlineNumber = hotlineRow[2].toString().trim();
+          }
+        }
+        
+        if (!hotlineNumber) {
+          console.warn('Hotline number not found for LeakReports');
+        }
+        
+        // Save to LeakReports with ticket number
+        const rowData = [
+          form.name || '',
+          form.contactNumber || '',
+          form.address || '',
+          form.leakLocation || '',
+          form.description || '',
+          form.urgency || '',
+          ticket
+        ];
+        
+        const saveRes = await fetch(`${API_BASE}/sheets/service-request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
+        });
+        
+        const saveText = await saveRes.text();
+        let saveData;
+        try { saveData = JSON.parse(saveText); } catch {
+          throw new Error('Failed to save leak report');
+        }
+        
+        if (!saveData.success) throw new Error(saveData.error || 'Failed to save leak report');
+        
+        // Send SMS notification to hotline if available
+        if (hotlineNumber) {
+          const smsMessage = `Leak Report Received\nTicket: ${ticket}\nLocation: ${form.address}\nUrgency: ${form.urgency}\nReporter: ${form.name} (${form.contactNumber})`;
+          
+          try {
+            await fetch(`${API_BASE}/sms/send-single`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phone: hotlineNumber,
+                message: smsMessage,
+              }),
+            });
+          } catch (smsErr) {
+            console.error('Failed to send SMS notification:', smsErr);
+            // Don't throw error - SMS failure shouldn't prevent form submission
+          }
+        }
+        
+        // Show confirmation modal with ticket number
+        setLeakReportSubmitted(true);
+      } catch (err) {
+        setError(err.message);
       }
       setSub(false);
       return;
@@ -2405,7 +2499,27 @@ function ServiceFormScreen({ config, onClose }) {
             <p className="text-sm text-gray-500 mb-6 leading-relaxed">{config.desc}</p>
           )}
 
-        {success ? (
+        {leakReportSubmitted ? (
+          <div className="flex flex-col items-center justify-center text-center space-y-4 py-12">
+            <div className="bg-green-600 rounded-full p-4 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-blue-900">Leak Report Submitted</p>
+              <p className="text-sm text-gray-500 mt-2">Thank you! Our team has been notified.</p>
+            </div>
+            <div className="bg-gray-100 rounded-lg p-4 w-full mt-2 border-2 border-dashed border-blue-900">
+              <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Your Ticket Number</p>
+              <p className="text-2xl font-bold text-blue-900 font-mono">{ticketNumber}</p>
+              <p className="text-xs text-gray-500 mt-2">Please keep this number for your records</p>
+            </div>
+            <button onClick={onClose} className="mt-6 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors w-full">
+              Back to Services
+            </button>
+          </div>
+        ) : success ? (
           <div className="flex flex-col items-center justify-center text-center space-y-3 py-12">
             <div className="bg-blue-900 rounded-full p-4 mb-2">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
