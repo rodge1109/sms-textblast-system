@@ -2083,7 +2083,7 @@ const SERVICE_CONFIGS = [
   {
     icon: Droplets, label: 'Low Pressure / No Water Report', desc: 'Report water supply issues',
     tabName: 'WaterIssues',
-    headers: ['Name', 'Contact Number', 'Address', 'Issue Type', 'Date/Time Noticed', 'Description'],
+    headers: ['Name', 'Contact Number', 'Address', 'Issue Type', 'Date/Time Noticed', 'Description', 'Ticket Number'],
     fields: [
       { key: 'name',          label: 'Full Name',         type: 'text',           required: true  },
       { key: 'contactNumber', label: 'Contact Number',    type: 'text',           required: true  },
@@ -2170,6 +2170,8 @@ function ServiceFormScreen({ config, onClose }) {
   const [billNotFound, setBillNotFound] = useState(false);
   const [ticketNumber, setTicketNumber] = useState('');
   const [leakReportSubmitted, setLeakReportSubmitted] = useState(false);
+  const [waterIssueSubmitted, setWaterIssueSubmitted] = useState(false);
+  const [waterIssueTicketNumber, setWaterIssueTicketNumber] = useState('');
   const barcodeRef = useRef(null);
 
   const inputCls = 'w-full border border-gray-200 bg-white text-gray-800 placeholder-gray-400 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900';
@@ -2204,7 +2206,7 @@ function ServiceFormScreen({ config, onClose }) {
   };
 
   async function handleSubmit(e) {
-    e.preventDefault(); setError(''); setBillData(null); setBillNotFound(false); setLeakReportSubmitted(false);
+    e.preventDefault(); setError(''); setBillData(null); setBillNotFound(false); setLeakReportSubmitted(false); setWaterIssueSubmitted(false);
     
     // Special handling for "View Bill" service
     if (config.label === 'View Bill') {
@@ -2359,6 +2361,90 @@ function ServiceFormScreen({ config, onClose }) {
         
         // Show confirmation modal with ticket number
         setLeakReportSubmitted(true);
+      } catch (err) {
+        setError(err.message);
+      }
+      setSub(false);
+      return;
+    }
+    
+    // Special handling for "Low Pressure / No Water Report" service
+    if (config.label === 'Low Pressure / No Water Report') {
+      setSub(true);
+      try {
+        // Generate ticket number
+        const ticket = generateTicketNumber().replace('LEAK', 'WATER');
+        setWaterIssueTicketNumber(ticket);
+        
+        // Fetch Hotlines tab to get the water issues hotline
+        const hotlinesRes = await fetch(`${API_BASE}/sheets/get-tab?tab=Hotlines`);
+        const hotlinesText = await hotlinesRes.text();
+        let hotlinesData;
+        try { hotlinesData = JSON.parse(hotlinesText); } catch {
+          throw new Error('Failed to fetch hotlines data');
+        }
+        
+        // Look for Water or WaterIssues row in Hotlines tab
+        let hotlineNumber = '';
+        if (hotlinesData.success && hotlinesData.rows) {
+          const hotlineRow = hotlinesData.rows.find(row => 
+            row[0] && (row[0].toString().toLowerCase().includes('water') || row[0].toString().toLowerCase().includes('pressure'))
+          );
+          if (hotlineRow && hotlineRow[2]) {
+            hotlineNumber = hotlineRow[2].toString().trim();
+          }
+        }
+        
+        if (!hotlineNumber) {
+          console.warn('Hotline number not found for Water Issues');
+        }
+        
+        // Save to WaterIssues with ticket number
+        const rowData = [
+          form.name || '',
+          form.contactNumber || '',
+          form.address || '',
+          form.issueType || '',
+          form.dateNoticed || '',
+          form.description || '',
+          ticket
+        ];
+        
+        const saveRes = await fetch(`${API_BASE}/sheets/service-request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
+        });
+        
+        const saveText = await saveRes.text();
+        let saveData;
+        try { saveData = JSON.parse(saveText); } catch {
+          throw new Error('Failed to save water issue report');
+        }
+        
+        if (!saveData.success) throw new Error(saveData.error || 'Failed to save water issue report');
+        
+        // Send SMS notification to hotline if available
+        if (hotlineNumber) {
+          const smsMessage = `Water Issue Report\nTicket: ${ticket}\nIssue: ${form.issueType}\nLocation: ${form.address}\nReporter: ${form.name} (${form.contactNumber})`;
+          
+          try {
+            await fetch(`${API_BASE}/sms/send-single`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phone: hotlineNumber,
+                message: smsMessage,
+              }),
+            });
+          } catch (smsErr) {
+            console.error('Failed to send SMS notification:', smsErr);
+            // Don't throw error - SMS failure shouldn't prevent form submission
+          }
+        }
+        
+        // Show confirmation modal with ticket number
+        setWaterIssueSubmitted(true);
       } catch (err) {
         setError(err.message);
       }
@@ -2540,6 +2626,26 @@ function ServiceFormScreen({ config, onClose }) {
             <div className="bg-gray-100 rounded-lg p-4 w-full mt-2 border-2 border-dashed border-blue-900">
               <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Your Ticket Number</p>
               <p className="text-2xl font-bold text-blue-900 font-mono">{ticketNumber}</p>
+              <p className="text-xs text-gray-500 mt-2">Please keep this number for your records</p>
+            </div>
+            <button onClick={onClose} className="mt-6 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors w-full">
+              Back to Services
+            </button>
+          </div>
+        ) : waterIssueSubmitted ? (
+          <div className="flex flex-col items-center justify-center text-center space-y-4 py-12">
+            <div className="bg-blue-600 rounded-full p-4 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-blue-900">Water Issue Report Submitted</p>
+              <p className="text-sm text-gray-500 mt-2">Thank you! Our team has been notified and will address this shortly.</p>
+            </div>
+            <div className="bg-gray-100 rounded-lg p-4 w-full mt-2 border-2 border-dashed border-blue-900">
+              <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Your Ticket Number</p>
+              <p className="text-2xl font-bold text-blue-900 font-mono">{waterIssueTicketNumber}</p>
               <p className="text-xs text-gray-500 mt-2">Please keep this number for your records</p>
             </div>
             <button onClick={onClose} className="mt-6 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors w-full">
