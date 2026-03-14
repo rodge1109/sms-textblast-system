@@ -23,6 +23,7 @@ import {
   Droplets,
   Wrench,
 } from 'lucide-react';
+import JsBarcode from 'jsbarcode';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -2169,9 +2170,30 @@ function ServiceFormScreen({ config, onClose }) {
   const [billNotFound, setBillNotFound] = useState(false);
   const [ticketNumber, setTicketNumber] = useState('');
   const [leakReportSubmitted, setLeakReportSubmitted] = useState(false);
+  const barcodeRef = useRef(null);
 
   const inputCls = 'w-full border border-gray-200 bg-white text-gray-800 placeholder-gray-400 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900';
   const labelCls = 'block text-xs font-semibold text-blue-900 mb-1 uppercase tracking-wide';
+
+  // Generate barcode when billData is set
+  useEffect(() => {
+    if (billData && barcodeRef.current) {
+      const conscode = billData['Conscode'] || billData['conscode'] || '';
+      if (conscode) {
+        try {
+          JsBarcode(barcodeRef.current, conscode, {
+            format: 'CODE128',
+            width: 2,
+            height: 50,
+            displayValue: true,
+            fontSize: 10,
+          });
+        } catch (err) {
+          console.error('Error generating barcode:', err);
+        }
+      }
+    }
+  }, [billData]);
 
   // Generate ticket number for leak reports
   const generateTicketNumber = () => {
@@ -2458,6 +2480,11 @@ function ServiceFormScreen({ config, onClose }) {
               {/* Footer */}
               <div className="pt-3 border-t-2 border-dashed border-gray-400 text-xs text-gray-600">
                 <p>Thank you for paying on time</p>
+                
+                {/* Barcode */}
+                <div className="mt-4 flex justify-center">
+                  <svg ref={barcodeRef}></svg>
+                </div>
               </div>
             </div>
             
