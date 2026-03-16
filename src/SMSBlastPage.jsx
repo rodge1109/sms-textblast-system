@@ -2223,7 +2223,7 @@ const SERVICE_CONFIGS = [
   {
     icon: ClipboardList, label: 'Billing Concerns', desc: 'Raise a billing dispute or inquiry',
     tabName: 'BillingConcerns',
-    headers: ['Name', 'Account Number', 'Contact Number', 'Concern Type', 'Description', 'Ticket Number'],
+    headers: ['Name', 'Account Number', 'Contact Number', 'Concern Type', 'Description'],
     fields: [
       { key: 'name',          label: 'Full Name',      type: 'text',     required: true  },
       { key: 'accountNumber', label: 'Account Number', type: 'text',     required: true  },
@@ -2353,8 +2353,6 @@ function ServiceFormScreen({ config, onClose }) {
   const [leakReportSubmitted, setLeakReportSubmitted] = useState(false);
   const [waterIssueSubmitted, setWaterIssueSubmitted] = useState(false);
   const [waterIssueTicketNumber, setWaterIssueTicketNumber] = useState('');
-  const [billingConcernSubmitted, setBillingConcernSubmitted] = useState(false);
-  const [billingConcernTicketNumber, setBillingConcernTicketNumber] = useState('');
   const barcodeRef = useRef(null);
 
   const inputCls = 'w-full border border-gray-200 bg-white text-gray-800 placeholder-gray-400 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900';
@@ -2389,7 +2387,7 @@ function ServiceFormScreen({ config, onClose }) {
   };
 
   async function handleSubmit(e) {
-    e.preventDefault(); setError(''); setBillData(null); setBillNotFound(false); setLeakReportSubmitted(false); setWaterIssueSubmitted(false); setBillingConcernSubmitted(false);
+    e.preventDefault(); setError(''); setBillData(null); setBillNotFound(false); setLeakReportSubmitted(false); setWaterIssueSubmitted(false);
     
     // Special handling for "View Bill" service
     if (config.label === 'View Bill') {
@@ -2635,89 +2633,6 @@ function ServiceFormScreen({ config, onClose }) {
       return;
     }
     
-    // Special handling for "Billing Concerns" service
-    if (config.label === 'Billing Concerns') {
-      setSub(true);
-      try {
-        // Generate ticket number
-        const ticket = generateTicketNumber().replace('LEAK', 'BILL');
-        setBillingConcernTicketNumber(ticket);
-        
-        // Fetch Hotlines tab to get the billing concerns hotline
-        const hotlinesRes = await fetch(`${API_BASE}/sheets/get-tab?tab=Hotlines`);
-        const hotlinesText = await hotlinesRes.text();
-        let hotlinesData;
-        try { hotlinesData = JSON.parse(hotlinesText); } catch {
-          throw new Error('Failed to fetch hotlines data');
-        }
-        
-        // Look for Billing row in Hotlines tab (column A = "Billing")
-        let hotlineNumber = '';
-        if (hotlinesData.success && hotlinesData.rows) {
-          const hotlineRow = hotlinesData.rows.find(row => 
-            row[0] && row[0].toString().trim() === 'Billing'
-          );
-          if (hotlineRow && hotlineRow[2]) {
-            hotlineNumber = hotlineRow[2].toString().trim();
-          }
-        }
-        
-        if (!hotlineNumber) {
-          console.warn('Hotline number not found for Billing Concerns (looking for "Billing" in column A)');
-        }
-        
-        // Save to BillingConcerns with ticket number
-        const rowData = [
-          form.name || '',
-          form.accountNumber || '',
-          form.contactNumber || '',
-          form.concernType || '',
-          form.description || '',
-          ticket
-        ];
-        
-        const saveRes = await fetch(`${API_BASE}/sheets/service-request`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
-        });
-        
-        const saveText = await saveRes.text();
-        let saveData;
-        try { saveData = JSON.parse(saveText); } catch {
-          throw new Error('Failed to save billing concern');
-        }
-        
-        if (!saveData.success) throw new Error(saveData.error || 'Failed to save billing concern');
-        
-        // Send SMS notification to hotline if available
-        if (hotlineNumber) {
-          const smsMessage = `Billing Concern Report\nTicket: ${ticket}\nConcern: ${form.concernType}\nAccount: ${form.accountNumber}\nReporter: ${form.name} (${form.contactNumber})`;
-          
-          try {
-            await fetch(`${API_BASE}/sms/send-single`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                phone: hotlineNumber,
-                message: smsMessage,
-              }),
-            });
-          } catch (smsErr) {
-            console.error('Failed to send SMS notification:', smsErr);
-            // Don't throw error - SMS failure shouldn't prevent form submission
-          }
-        }
-        
-        // Show confirmation modal with ticket number
-        setBillingConcernSubmitted(true);
-      } catch (err) {
-        setError(err.message);
-      }
-      setSub(false);
-      return;
-    }
-    
     // Default handling for other services
     const rowData = config.fields.map(f => form[f.key] || '');
     setSub(true);
@@ -2912,26 +2827,6 @@ function ServiceFormScreen({ config, onClose }) {
             <div className="bg-gray-100 rounded-lg p-4 w-full mt-2 border-2 border-dashed border-blue-900">
               <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Your Ticket Number</p>
               <p className="text-2xl font-bold text-blue-900 font-mono">{waterIssueTicketNumber}</p>
-              <p className="text-xs text-gray-500 mt-2">Please keep this number for your records</p>
-            </div>
-            <button onClick={onClose} className="mt-6 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors w-full">
-              Back to Services
-            </button>
-          </div>
-        ) : billingConcernSubmitted ? (
-          <div className="flex flex-col items-center justify-center text-center space-y-4 py-12">
-            <div className="bg-purple-600 rounded-full p-4 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xl font-bold text-blue-900">Billing Concern Submitted</p>
-              <p className="text-sm text-gray-500 mt-2">Thank you! We will review your concern and get back to you shortly.</p>
-            </div>
-            <div className="bg-gray-100 rounded-lg p-4 w-full mt-2 border-2 border-dashed border-blue-900">
-              <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Your Ticket Number</p>
-              <p className="text-2xl font-bold text-blue-900 font-mono">{billingConcernTicketNumber}</p>
               <p className="text-xs text-gray-500 mt-2">Please keep this number for your records</p>
             </div>
             <button onClick={onClose} className="mt-6 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors w-full">

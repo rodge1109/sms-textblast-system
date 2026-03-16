@@ -955,8 +955,8 @@ function Header({ currentPage, setCurrentPage, setShowCart, searchQuery, setSear
     }`}>
       <div className="w-full h-full overflow-visible">
         {/* Top bar */}
-        <div className="w-full h-full px-0 md:px-0 overflow-visible">
-          <div className="flex items-center justify-between gap-0 h-full overflow-visible px-4 md:px-8">
+        <div className="w-full h-full px-4 md:px-8 overflow-visible">
+          <div className="flex items-center justify-between gap-4 h-full overflow-visible">
             {/* Logo - hidden on mobile when search is shown */}
             <div className={`flex items-center space-x-1 cursor-pointer overflow-visible ${(currentPage === 'home' || currentPage === 'menu') ? 'hidden md:flex' : 'flex'}`} onClick={() => setCurrentPage('home')}>
               <img src="/assets/images/header1.png" alt="Logo" className="w-auto shrink-0 relative z-[70]" style={{ height: 120 }} />
