@@ -200,4 +200,137 @@ router.get('/get-tab', async (req, res) => {
   }
 });
 
+/**
+ * MASTERLIST WRITE ENDPOINTS
+ * - Add row to Masterlist
+ * - Update row in Masterlist by CONSCODE (treated as unique key)
+ */
+
+function normalizeRowToHeaders(headers, rowData) {
+  const normalizedHeaders = headers.map((h) => (h == null ? '' : String(h)));
+  const arr = Array.isArray(rowData) ? rowData : [];
+  return normalizedHeaders.map((_, idx) => (arr[idx] == null ? '' : String(arr[idx])));
+}
+
+function findConscodeColumnIndex(headers) {
+  return headers.findIndex((h) => String(h || '').trim().toLowerCase() === 'conscode');
+}
+
+// POST /api/sheets/masterlist/add
+// Body: { rowData: string[] }
+router.post('/masterlist/add', async (req, res) => {
+  try {
+    const { rowData } = req.body || {};
+    if (!Array.isArray(rowData)) {
+      return res.status(400).json({ success: false, error: 'rowData must be an array.' });
+    }
+
+    const targetSheetId = process.env.GOOGLE_LATEST_BILL_SHEET_ID || DEFAULT_SHEET_ID;
+    const sheets = getWriteSheets();
+
+    // Read headers so we can normalize row shape
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId: targetSheetId,
+      range: 'Masterlist',
+    });
+
+    const values = existing.data.values || [];
+    if (values.length === 0) {
+      return res.status(400).json({ success: false, error: 'Masterlist tab is empty (missing header row).' });
+    }
+
+    const [headers] = values;
+    const consIdx = findConscodeColumnIndex(headers);
+    if (consIdx < 0) {
+      return res.status(400).json({ success: false, error: 'CONSCODE column not found in Masterlist headers.' });
+    }
+
+    const normalizedRow = normalizeRowToHeaders(headers, rowData);
+    const conscode = String(normalizedRow[consIdx] || '').trim();
+    if (!conscode) {
+      return res.status(400).json({ success: false, error: 'CONSCODE is required.' });
+    }
+
+    // Check duplicate conscode (case-insensitive, trimmed)
+    const existingRows = values.slice(1);
+    const dup = existingRows.some((r) => String((r || [])[consIdx] || '').trim().toLowerCase() === conscode.toLowerCase());
+    if (dup) {
+      return res.status(409).json({ success: false, error: `CONSCODE ${conscode} already exists.` });
+    }
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: targetSheetId,
+      range: 'Masterlist!A1',
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [normalizedRow] },
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Masterlist add error:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// PUT /api/sheets/masterlist/update
+// Body: { conscode: string, rowData: string[] }
+router.put('/masterlist/update', async (req, res) => {
+  try {
+    const { conscode, rowData } = req.body || {};
+    if (!conscode || !String(conscode).trim()) {
+      return res.status(400).json({ success: false, error: 'conscode is required.' });
+    }
+    if (!Array.isArray(rowData)) {
+      return res.status(400).json({ success: false, error: 'rowData must be an array.' });
+    }
+
+    const targetSheetId = process.env.GOOGLE_LATEST_BILL_SHEET_ID || DEFAULT_SHEET_ID;
+    const sheets = getWriteSheets();
+
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId: targetSheetId,
+      range: 'Masterlist',
+    });
+
+    const values = existing.data.values || [];
+    if (values.length === 0) {
+      return res.status(400).json({ success: false, error: 'Masterlist tab is empty (missing header row).' });
+    }
+
+    const [headers, ...rows] = values;
+    const consIdx = findConscodeColumnIndex(headers);
+    if (consIdx < 0) {
+      return res.status(400).json({ success: false, error: 'CONSCODE column not found in Masterlist headers.' });
+    }
+
+    const target = String(conscode).trim().toLowerCase();
+    const rowIndex0 = rows.findIndex((r) => String((r || [])[consIdx] || '').trim().toLowerCase() === target);
+    if (rowIndex0 < 0) {
+      return res.status(404).json({ success: false, error: `CONSCODE ${conscode} not found.` });
+    }
+
+    const normalizedRow = normalizeRowToHeaders(headers, rowData);
+
+    // Ensure CONSCODE stays consistent with the key (don’t allow changing key via update)
+    normalizedRow[consIdx] = String(conscode).trim();
+
+    // Row number in sheet is: 1 header row + rowIndex0 (0-based into rows) + 1 (1-based) => rowIndex0 + 2
+    const sheetRowNumber = rowIndex0 + 2;
+    const range = `Masterlist!A${sheetRowNumber}`;
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: targetSheetId,
+      range,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [normalizedRow] },
+    });
+
+    return res.json({ success: true, rowNumber: sheetRowNumber });
+  } catch (err) {
+    console.error('Masterlist update error:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

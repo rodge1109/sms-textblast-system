@@ -22,12 +22,14 @@ import {
   RefreshCw,
   Droplets,
   Wrench,
+  Pencil,
+  Plus,
 } from 'lucide-react';
 import JsBarcode from 'jsbarcode';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5000/api'
+    ? 'http://localhost:5001/api'
     : `${window.location.origin}/api`);
 
 const menuItems = [
@@ -439,7 +441,15 @@ function SmsToolModal({ consumers, headers, onClose }) {
 
 const _sheetCache = {}; // { [apiUrl]: { headers, rows } }
 
-function SheetGrid({ title, subtitle, apiUrl, tabLabel, extraButtons, onFilteredRowsChange }) {
+function SheetGrid({
+  title,
+  subtitle,
+  apiUrl,
+  tabLabel,
+  extraButtons,
+  onFilteredRowsChange,
+  rowActions,
+}) {
   const [data, setData]               = useState(_sheetCache[apiUrl] || null);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState(null);
@@ -607,6 +617,11 @@ function SheetGrid({ title, subtitle, apiUrl, tabLabel, extraButtons, onFiltered
                         {h}<SortIcon ci={ci} />
                       </th>
                     ))}
+                    {rowActions && (
+                      <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold text-gray-600 whitespace-nowrap w-24">
+                        Actions
+                      </th>
+                    )}
                   </tr>
                   {/* Per-column filter inputs */}
                   {showColFilters && (
@@ -623,6 +638,7 @@ function SheetGrid({ title, subtitle, apiUrl, tabLabel, extraButtons, onFiltered
                           />
                         </td>
                       ))}
+                      {rowActions && <td className="border border-gray-300 px-1 py-1" />}
                     </tr>
                   )}
                 </thead>
@@ -633,6 +649,11 @@ function SheetGrid({ title, subtitle, apiUrl, tabLabel, extraButtons, onFiltered
                       {data.headers.map((_, ci) => (
                         <td key={ci} className="border border-gray-200 px-2 py-1 text-gray-700">{row[ci] ?? ''}</td>
                       ))}
+                      {rowActions && (
+                        <td className="border border-gray-200 px-2 py-1">
+                          {rowActions(row, data.headers)}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -649,34 +670,189 @@ function SheetGrid({ title, subtitle, apiUrl, tabLabel, extraButtons, onFiltered
   );
 }
 
+function ConsumerFormModal({ mode, headers, initialRow, onClose, onSaved }) {
+  const isEdit = mode === 'edit';
+
+  const consIdx = useMemo(
+    () => headers.findIndex(h => String(h || '').trim().toLowerCase() === 'conscode'),
+    [headers]
+  );
+
+  const [form, setForm] = useState(() => {
+    const base = {};
+    headers.forEach((h, i) => { base[i] = ''; });
+    if (initialRow) {
+      headers.forEach((_, i) => { base[i] = initialRow[i] ?? ''; });
+    }
+    return base;
+  });
+
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState(null);
+
+  const conscode = String(form[consIdx] ?? '').trim();
+
+  const inputCls = 'border border-gray-300 rounded px-2 py-1.5 text-sm w-full focus:outline-none focus:border-blue-400';
+  const labelCls = 'text-[11px] font-semibold text-gray-500 uppercase tracking-wide';
+
+  async function handleSave() {
+    setStatus(null);
+    if (consIdx < 0) { setStatus({ type: 'error', msg: 'CONSCODE column not found in Masterlist headers.' }); return; }
+    if (!conscode)  { setStatus({ type: 'error', msg: 'CONSCODE is required.' }); return; }
+
+    const rowData = headers.map((_, i) => String(form[i] ?? ''));
+
+    setSaving(true);
+    try {
+      const url = isEdit ? `${API_BASE}/sheets/masterlist/update` : `${API_BASE}/sheets/masterlist/add`;
+      const method = isEdit ? 'PUT' : 'POST';
+      const body = isEdit ? { conscode, rowData } : { rowData };
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Save failed.');
+
+      setStatus({ type: 'success', msg: isEdit ? 'Consumer updated.' : 'Consumer added.' });
+      onSaved?.();
+      onClose();
+    } catch (e) {
+      setStatus({ type: 'error', msg: e.message || 'Save failed.' });
+    }
+    setSaving(false);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-bold text-gray-800">{isEdit ? 'Edit Consumer' : 'Add Consumer'}</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Masterlist (Google Sheet)</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none ml-4">✕</button>
+        </div>
+
+        {status && <StatusBadge message={status.msg} type={status.type} />}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {headers.map((h, i) => {
+            const isConscode = i === consIdx;
+            return (
+              <div key={i}>
+                <p className={labelCls}>{h || `Column ${i + 1}`}{isConscode && <span className="text-red-500 ml-1">*</span>}</p>
+                <input
+                  className={inputCls}
+                  value={form[i]}
+                  disabled={isEdit && isConscode}
+                  onChange={(e) => setForm(prev => ({ ...prev, [i]: e.target.value }))}
+                />
+                {isEdit && isConscode && (
+                  <p className="text-[10px] text-gray-400 mt-1">CONSCODE cannot be changed when editing.</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex gap-3 pt-2 border-t border-gray-200">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-6 py-1.5 rounded transition-colors disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+          <button onClick={onClose} className="text-xs px-4 py-1.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConsumersContent() {
-  const [smsToolOpen, setSmsToolOpen]           = useState(false);
+  const [smsToolOpen, setSmsToolOpen]             = useState(false);
+  const [consumerFormOpen, setConsumerFormOpen]   = useState(false);
+  const [consumerFormMode, setConsumerFormMode]   = useState('add'); // 'add' | 'edit'
+  const [editRow, setEditRow]                     = useState(null);
+
   const [filteredConsumers, setFilteredConsumers] = useState([]);
   const [filteredHeaders, setFilteredHeaders]     = useState([]);
+
+  const masterlistApiUrl = `${API_BASE}/sheets/masterlist`;
+
+  const refreshMasterlist = () => {
+    delete _sheetCache[masterlistApiUrl];
+  };
+
+  const openAdd = () => {
+    setConsumerFormMode('add');
+    setEditRow(null);
+    setConsumerFormOpen(true);
+  };
+
+  const openEdit = (row) => {
+    setConsumerFormMode('edit');
+    setEditRow(row);
+    setConsumerFormOpen(true);
+  };
 
   return (
     <>
       <SheetGrid
         title="Consumers"
         subtitle="Current data in the Masterlist Google Sheet tab."
-        apiUrl={`${API_BASE}/sheets/masterlist`}
+        apiUrl={masterlistApiUrl}
         tabLabel="Masterlist"
         onFilteredRowsChange={(rows, headers) => { setFilteredConsumers(rows); setFilteredHeaders(headers); }}
         extraButtons={
-          <button
-            onClick={() => setSmsToolOpen(true)}
-            disabled={filteredConsumers.length === 0}
-            className="text-xs bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded font-semibold transition-colors disabled:opacity-40"
-          >
-            SMS Tool
-          </button>
+          <>
+            <button
+              onClick={openAdd}
+              className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded font-semibold transition-colors flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> Add Consumer
+            </button>
+            <button
+              onClick={() => setSmsToolOpen(true)}
+              disabled={filteredConsumers.length === 0}
+              className="text-xs bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded font-semibold transition-colors disabled:opacity-40"
+            >
+              SMS Tool
+            </button>
+          </>
         }
+        rowActions={(row) => (
+          <button
+            onClick={() => openEdit(row)}
+            className="text-blue-600 hover:text-blue-800 hover:underline font-semibold inline-flex items-center gap-1"
+            title="Edit consumer"
+          >
+            <Pencil className="w-3.5 h-3.5" /> Edit
+          </button>
+        )}
       />
+
       {smsToolOpen && (
         <SmsToolModal
           consumers={filteredConsumers}
           headers={filteredHeaders}
           onClose={() => setSmsToolOpen(false)}
+        />
+      )}
+
+      {consumerFormOpen && (
+        <ConsumerFormModal
+          mode={consumerFormMode}
+          headers={filteredHeaders}
+          initialRow={editRow}
+          onClose={() => setConsumerFormOpen(false)}
+          onSaved={refreshMasterlist}
         />
       )}
     </>
@@ -2590,7 +2766,7 @@ function ServiceFormScreen({ config, onClose }) {
           <div className="flex-1 px-4 py-6">
             {/* Receipt Paper */}
             <div 
-              className="mx-auto max-w-xs rounded-sm shadow-lg p-6 border border-yellow-100 font-mono text-sm text-center"
+              className="mx-auto w-full max-w-2xl rounded-sm shadow-lg p-6 border border-yellow-100 font-mono text-sm text-center"
               style={{
                 backgroundImage: `
                   repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.02) 1px, rgba(0,0,0,0.02) 2px),
@@ -2919,7 +3095,3 @@ export default function SMSBlastPage({ employee, authToken, onMenuChange }) {
     </div>
   );
 }
-
-
-
-

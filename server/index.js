@@ -25,7 +25,8 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const cliPort = Number(process.argv[2]);
+const PORT = Number.isFinite(cliPort) && cliPort > 0 ? cliPort : (process.env.PORT || 5000);
 
 // Trust Render's reverse proxy so secure cookies work over HTTPS
 app.set('trust proxy', 1);
