@@ -73,6 +73,7 @@ router.get('/latest-bill', async (req, res) => {
 
 // POST /api/sheets/latest-bill/replace
 // Body: { headers: string[], rows: string[][], spreadsheetId?: string, tabName?: string }
+// NOTE: This overwrites the entire tab. Prefer /latest-bill/append if you want to add new batches.
 router.post('/latest-bill/replace', async (req, res) => {
   try {
     const { headers, rows, spreadsheetId, tabName } = req.body || {};
@@ -118,6 +119,156 @@ router.post('/latest-bill/replace', async (req, res) => {
     });
   } catch (err) {
     console.error('LatestBill replace error:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * Appends to any target tab, enforcing header match if tab already has headers.
+ * If tab is empty, writes headers first.
+ */
+async function appendWithHeaderCheck({
+  sheets,
+  spreadsheetId,
+  tabName,
+  headers,
+  rows,
+}) {
+  const normalizedHeaders = headers.map((h) => (h == null ? '' : String(h)));
+  const normalizedRows = rows.map((row) => {
+    if (!Array.isArray(row)) return normalizedHeaders.map(() => '');
+    return normalizedHeaders.map((_, idx) => (row[idx] == null ? '' : String(row[idx])));
+  });
+
+  // Read existing header row (if any)
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${tabName}!1:1`,
+  });
+
+  const existingValues = existing.data.values || [];
+  const existingHeaders = existingValues[0] || [];
+
+  // If empty sheet/tab, write headers to A1 first
+  if (existingHeaders.length === 0 || existingHeaders.every((c) => String(c || '').trim() === '')) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${tabName}!A1`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [normalizedHeaders] },
+    });
+  } else {
+    // If not empty, ensure headers match (case-insensitive compare after trim)
+    const norm = (arr) => arr.map((v) => String(v || '').trim().toLowerCase());
+    const a = norm(existingHeaders);
+    const b = norm(normalizedHeaders);
+    const same =
+      a.length === b.length &&
+      a.every((v, i) => v === b[i]);
+
+    if (!same) {
+      const err = new Error(`Header mismatch. Existing headers in ${tabName} do not match the uploaded batch.`);
+      err.status = 409;
+      err.details = { existingHeaders, uploadedHeaders: normalizedHeaders };
+      throw err;
+    }
+  }
+
+  // Append rows (no header row)
+  await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: `${tabName}!A1`,
+    valueInputOption: 'USER_ENTERED',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values: normalizedRows },
+  });
+
+  return { rowsAppended: normalizedRows.length };
+}
+
+// POST /api/sheets/latest-bill/append
+// Body: { headers: string[], rows: string[][], spreadsheetId?: string, tabName?: string }
+// Appends rows to the bottom of the LatestBill tab. If tab is empty, writes headers first.
+router.post('/latest-bill/append', async (req, res) => {
+  try {
+    const { headers, rows, spreadsheetId, tabName } = req.body || {};
+
+    if (!Array.isArray(headers) || headers.length === 0) {
+      return res.status(400).json({ success: false, error: 'headers must be a non-empty array.' });
+    }
+    if (!Array.isArray(rows)) {
+      return res.status(400).json({ success: false, error: 'rows must be an array.' });
+    }
+
+    const targetSheetId = spreadsheetId || process.env.GOOGLE_LATEST_BILL_SHEET_ID || DEFAULT_SHEET_ID;
+    const targetTabName = tabName || process.env.GOOGLE_LATEST_BILL_TAB || DEFAULT_TAB_NAME;
+
+    const sheets = getWriteSheets();
+
+    const { rowsAppended } = await appendWithHeaderCheck({
+      sheets,
+      spreadsheetId: targetSheetId,
+      tabName: targetTabName,
+      headers,
+      rows,
+    });
+
+    return res.json({
+      success: true,
+      sheetId: targetSheetId,
+      tabName: targetTabName,
+      rowsAppended,
+    });
+  } catch (err) {
+    console.error('LatestBill append error:', err.message);
+    if (err.status === 409) {
+      return res.status(409).json({ success: false, error: err.message, ...(err.details || {}) });
+    }
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/sheets/monthly-bill/add
+// Body: { headers: string[], rowData: string[], spreadsheetId?: string, tabName?: string }
+// Appends a single record to MonthlyBill tab (does NOT overwrite).
+router.post('/monthly-bill/add', async (req, res) => {
+  try {
+    const { headers, rowData, spreadsheetId, tabName } = req.body || {};
+
+    if (!Array.isArray(headers) || headers.length === 0) {
+      return res.status(400).json({ success: false, error: 'headers must be a non-empty array.' });
+    }
+    if (!Array.isArray(rowData)) {
+      return res.status(400).json({ success: false, error: 'rowData must be an array.' });
+    }
+
+    const targetSheetId = spreadsheetId || process.env.GOOGLE_LATEST_BILL_SHEET_ID || DEFAULT_SHEET_ID;
+    const targetTabName = tabName || process.env.GOOGLE_MONTHLY_BILL_TAB || 'MonthlyBill';
+
+    const sheets = getWriteSheets();
+
+    // normalize row length to headers length
+    const normalizedRow = headers.map((_, idx) => (rowData[idx] == null ? '' : String(rowData[idx])));
+
+    const { rowsAppended } = await appendWithHeaderCheck({
+      sheets,
+      spreadsheetId: targetSheetId,
+      tabName: targetTabName,
+      headers,
+      rows: [normalizedRow],
+    });
+
+    return res.json({
+      success: true,
+      sheetId: targetSheetId,
+      tabName: targetTabName,
+      rowsAppended,
+    });
+  } catch (err) {
+    console.error('MonthlyBill add error:', err.message);
+    if (err.status === 409) {
+      return res.status(409).json({ success: false, error: err.message, ...(err.details || {}) });
+    }
     return res.status(500).json({ success: false, error: err.message });
   }
 });

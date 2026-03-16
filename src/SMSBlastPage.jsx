@@ -971,6 +971,7 @@ function ToolsContent() {
   const [billsPreview, setBillsPreview]   = useState(null);
   const [billsSending, setBillsSending]   = useState(false);
   const [billsSendStatus, setBillsSendStatus] = useState(null);
+  const [monthlyBillAddStatus, setMonthlyBillAddStatus] = useState(null);
   const billsRef = useRef();
 
   // â”€â”€ SMS Broadcast â”€â”€
@@ -1139,6 +1140,7 @@ function ToolsContent() {
 
     setBillsProcessing(true);
     setBillsStatus(null);
+    setMonthlyBillAddStatus(null);
     setBillsPreview(null);
     try {
       const BILL_COLS = ['Conscode', 'Consumption', 'Water Fee', 'Installation Fee', 'Meter Maintenance'];
@@ -1160,7 +1162,7 @@ function ToolsContent() {
         });
       }
 
-      // Replace Google Sheet tab LatestBill unless SMS-only mode is enabled.
+      // Append to LatestBill ONLY (append-only; does NOT overwrite)
       if (!smsOnly) {
         const sheetHeaders = [...BILL_COLS, 'Due Date', 'Disconnection Date'];
         const sheetPayload = {
@@ -1176,15 +1178,17 @@ function ToolsContent() {
             formatDate(disconDate),
           ]),
         };
-        const sheetRes = await fetch(`${API_BASE}/sheets/latest-bill/replace`, {
+        const sheetRes = await fetch(`${API_BASE}/sheets/latest-bill/append`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(sheetPayload),
         });
         const sheetData = await sheetRes.json();
         if (!sheetRes.ok || !sheetData.success) {
-          throw new Error(sheetData.error || 'Failed to update LatestBill in Google Sheets.');
+          throw new Error(sheetData.error || 'Failed to append to LatestBill in Google Sheets.');
         }
+
+        setMonthlyBillAddStatus({ type: 'success', msg: `LatestBill appended (${bills.length} record${bills.length !== 1 ? 's' : ''}).` });
       }
 
       const results = [];
@@ -1203,7 +1207,7 @@ function ToolsContent() {
       const notFound = results.filter(r => r.status === 'not_found').length;
 
       setBillsPreview({ results, ready, noPhone, notFound });
-      setBillsStatus({ type: 'success', msg: `${ready} SMS ready to send · ${noPhone} missing phone · ${notFound} consumer not found.${smsOnly ? '' : ' LatestBill tab updated.'}` });
+      setBillsStatus({ type: 'success', msg: `${ready} SMS ready to send · ${noPhone} missing phone · ${notFound} consumer not found.${smsOnly ? '' : ' LatestBill tab appended.'}` });
     } catch (error) {
       setBillsStatus({ type: 'error', msg: error?.message || 'Failed to process bills file.' });
     }
@@ -1590,6 +1594,7 @@ function ToolsContent() {
                   </div>
 
                   <StatusBadge message={billsStatus?.msg} type={billsStatus?.type} />
+                  <StatusBadge message={monthlyBillAddStatus?.msg} type={monthlyBillAddStatus?.type} />
                 </div>
               </div>
         </div>
