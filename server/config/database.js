@@ -1,4 +1,4 @@
-import pg from 'pg';
+ import pg from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,14 +9,15 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const { Pool } = pg;
 
+const isSupabase = process.env.DATABASE_URL?.includes('supabase');
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: isSupabase ? { rejectUnauthorized: false } : false,
 });
 
-// Test connection
 pool.on('connect', () => {
-  console.log('Connected to Supabase PostgreSQL database');
+  console.log(`Connected to ${isSupabase ? 'Supabase' : 'Local'} PostgreSQL`);
 });
 
 pool.on('error', (err) => {
