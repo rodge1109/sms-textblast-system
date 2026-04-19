@@ -19,7 +19,12 @@ router.get('/', async (req, res) => {
         (SELECT COUNT(*) FROM order_items WHERE order_id = t.current_order_id) as item_count
       FROM tables t
       LEFT JOIN orders o ON t.current_order_id = o.id
-      ORDER BY t.table_number::int
+      ORDER BY
+        CASE
+          WHEN t.table_number ~ '^[0-9]+$' THEN t.table_number::int
+          ELSE NULL
+        END,
+        t.table_number
     `);
     res.json({ success: true, tables: result.rows });
   } catch (error) {

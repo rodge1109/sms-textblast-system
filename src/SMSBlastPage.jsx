@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -35,16 +35,16 @@ const API_BASE = import.meta.env.VITE_API_URL ||
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'consumers', label: 'Consumers', icon: Users },
-  { id: 'bills',     label: 'Bills',     icon: FileText },
-  { id: 'tools',     label: 'Tools',     icon: Settings2 },
-  { id: 'logs',      label: 'Logs',      icon: List },
-  { id: 'users',     label: 'Users',     icon: UserCog },
-  { id: 'chatbot',   label: 'Chat Bot',  icon: MessageSquare },
-  { id: 'service',   label: 'Service',   icon: LayoutGrid },
+  { id: 'bills', label: 'Bills', icon: FileText },
+  { id: 'tools', label: 'Tools', icon: Settings2 },
+  { id: 'logs', label: 'Logs', icon: List },
+  { id: 'users', label: 'Users', icon: UserCog },
+  { id: 'chatbot', label: 'Chat Bot', icon: MessageSquare },
+  { id: 'service', label: 'Service', icon: LayoutGrid },
 ];
 
 function DashboardContent() {
-  const [logs, setLogs]       = useState([]);
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ function DashboardContent() {
       .catch(() => setLoading(false));
   }, []);
 
-  const totalSent   = logs.reduce((s, l) => s + (l.sent   || 0), 0);
+  const totalSent = logs.reduce((s, l) => s + (l.sent || 0), 0);
   const totalFailed = logs.reduce((s, l) => s + (l.failed || 0), 0);
   const totalBlasts = logs.length;
   const successRate = (totalSent + totalFailed) > 0
@@ -81,7 +81,7 @@ function DashboardContent() {
     if (day) byDay[day] = (byDay[day] || 0) + (l.sent || 0);
   }
   const dayData = days.map(d => ({ day: d, sent: byDay[d] || 0 }));
-  const maxDay  = Math.max(...dayData.map(d => d.sent), 1);
+  const maxDay = Math.max(...dayData.map(d => d.sent), 1);
 
   const recent = logs.slice(0, 6);
 
@@ -108,10 +108,10 @@ function DashboardContent() {
       {/* â”€â”€ Stat Cards â”€â”€ */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         {[
-          { label: 'Total SMS Sent',  value: totalSent.toLocaleString(),   iconColor: 'text-blue-400',   Icon: Send       },
-          { label: 'Total Failed',    value: totalFailed.toLocaleString(), iconColor: 'text-red-400',    Icon: XCircle    },
-          { label: 'Success Rate',    value: `${successRate}%`,            iconColor: 'text-green-400',  Icon: TrendingUp },
-          { label: 'Total Blasts',    value: totalBlasts.toLocaleString(), iconColor: 'text-purple-400', Icon: Zap        },
+          { label: 'Total SMS Sent', value: totalSent.toLocaleString(), iconColor: 'text-blue-400', Icon: Send },
+          { label: 'Total Failed', value: totalFailed.toLocaleString(), iconColor: 'text-red-400', Icon: XCircle },
+          { label: 'Success Rate', value: `${successRate}%`, iconColor: 'text-green-400', Icon: TrendingUp },
+          { label: 'Total Blasts', value: totalBlasts.toLocaleString(), iconColor: 'text-purple-400', Icon: Zap },
         ].map(({ label, value, iconColor, Icon }) => (
           <div key={label} className="bg-gray-600 rounded-lg p-4 flex items-center gap-4">
             <Icon className={`w-9 h-9 shrink-0 ${iconColor}`} />
@@ -143,7 +143,7 @@ function DashboardContent() {
                 ))}
                 {dayData.map((d, i) => {
                   const barH = (d.sent / maxDay) * 90;
-                  const x    = i * 40 + 2;
+                  const x = i * 40 + 2;
                   return (
                     <g key={d.day}>
                       <rect x={x} y={110 - barH} width={36} height={barH}
@@ -229,34 +229,34 @@ function DashboardContent() {
 const SMS_TYPES = ['Billing', 'Due Date', 'Disconnection', 'Advisory'];
 
 function SmsToolModal({ consumers, headers, onClose }) {
-  const [smsType, setSmsType]       = useState('Due Date');
+  const [smsType, setSmsType] = useState('Due Date');
   const [datePosted, setDatePosted] = useState('');
-  const [dueDate, setDueDate]       = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [disconDate, setDisconDate] = useState('');
-  const [advisory, setAdvisory]     = useState('');
-  const [templates, setTemplates]   = useState(null);
-  const [sending, setSending]       = useState(false);
-  const [progress, setProgress]     = useState(null);
-  const [result, setResult]         = useState(null);
+  const [advisory, setAdvisory] = useState('');
+  const [templates, setTemplates] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [progress, setProgress] = useState(null);
+  const [result, setResult] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
 
   // Detect column indices from header names
-  const phoneColIdx   = headers.findIndex(h => /cellphone|phone|mobile|contact/i.test(h));
-  const nameColIdx    = headers.findIndex(h => /^name$/i.test(h));
+  const phoneColIdx = headers.findIndex(h => /cellphone|phone|mobile|contact/i.test(h));
+  const nameColIdx = headers.findIndex(h => /^name$/i.test(h));
   const accountColIdx = headers.findIndex(h => /account/i.test(h));
 
   useEffect(() => {
     fetch(`${API_BASE}/templates`)
       .then(r => r.json())
       .then(t => { setTemplates(t); if (t?.advTpl) setAdvisory(t.advTpl); })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const fmtPhone = (raw) => {
     if (!raw) return '';
     let n = String(raw).replace(/[\s\-()+]/g, '');
     if (n.startsWith('63') && n.length === 12) n = '0' + n.slice(2);
-    if (n.startsWith('9')  && n.length === 10) n = '0' + n;
+    if (n.startsWith('9') && n.length === 10) n = '0' + n;
     return /^09\d{9}$/.test(n) ? n : '';
   };
 
@@ -276,14 +276,14 @@ function SmsToolModal({ consumers, headers, onClose }) {
 
   const buildMsg = (row) => {
     if (!templates) return '';
-    const name          = nameColIdx    >= 0 ? (row[nameColIdx]    ?? 'Consumer') : 'Consumer';
-    const accountNumber = accountColIdx >= 0 ? (row[accountColIdx] ?? '')         : '';
+    const name = nameColIdx >= 0 ? (row[nameColIdx] ?? 'Consumer') : 'Consumer';
+    const accountNumber = accountColIdx >= 0 ? (row[accountColIdx] ?? '') : '';
     const vars = {
       name, accountNumber,
-      datePosted:  fmtDate(datePosted),
-      dueDate:     fmtDate(dueDate),
-      disconDate:  fmtDate(disconDate),
-      date:        fmtDate(smsType === 'Billing' ? datePosted : smsType === 'Due Date' ? dueDate : disconDate),
+      datePosted: fmtDate(datePosted),
+      dueDate: fmtDate(dueDate),
+      disconDate: fmtDate(disconDate),
+      date: fmtDate(smsType === 'Billing' ? datePosted : smsType === 'Due Date' ? dueDate : disconDate),
       advisory,
       consumption: '', waterFee: '0.00', installFee: '0.00',
       meterMaint: '0.00', penalty: '0.00', totalAmount: '0.00',
@@ -300,7 +300,7 @@ function SmsToolModal({ consumers, headers, onClose }) {
     for (let i = 0; i < messages.length; i += CHUNK) {
       const chunk = messages.slice(i, i + CHUNK);
       try {
-        const res  = await fetch(`${API_BASE}/sms/send-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: chunk }) });
+        const res = await fetch(`${API_BASE}/sms/send-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: chunk }) });
         const data = await res.json();
         if (data.success) { sent += data.sent; failed += data.failed; } else failed += chunk.length;
       } catch { failed += chunk.length; }
@@ -311,7 +311,7 @@ function SmsToolModal({ consumers, headers, onClose }) {
     fetch(`${API_BASE}/logs`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: 'System', logCode: smsType, sent, failed }),
-    }).catch(() => {});
+    }).catch(() => { });
   };
 
   const previewMsg = validConsumers.length > 0 ? buildMsg(validConsumers[0]) : '';
@@ -337,9 +337,8 @@ function SmsToolModal({ consumers, headers, onClose }) {
           <div className="flex gap-2 flex-wrap">
             {SMS_TYPES.map(t => (
               <button key={t} onClick={() => { setSmsType(t); setResult(null); setProgress(null); }}
-                className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
-                  smsType === t ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
-                }`}
+                className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${smsType === t ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                  }`}
               >{t}</button>
             ))}
           </div>
@@ -450,20 +449,20 @@ function SheetGrid({
   onFilteredRowsChange,
   rowActions,
 }) {
-  const [data, setData]               = useState(_sheetCache[apiUrl] || null);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState(null);
+  const [data, setData] = useState(_sheetCache[apiUrl] || null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [globalSearch, setGlobalSearch] = useState('');
-  const [colFilters, setColFilters]   = useState({});   // { colIndex: string }
-  const [sortCol, setSortCol]         = useState(null); // column index
-  const [sortDir, setSortDir]         = useState('asc');
+  const [colFilters, setColFilters] = useState({});   // { colIndex: string }
+  const [sortCol, setSortCol] = useState(null); // column index
+  const [sortDir, setSortDir] = useState('asc');
   const [showColFilters, setShowColFilters] = useState(false);
 
   const fetchData = async (bustCache = false) => {
     setLoading(true);
     setError(null);
     try {
-      const res  = await fetch(apiUrl);
+      const res = await fetch(apiUrl);
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load data.');
       _sheetCache[apiUrl] = json;
@@ -566,11 +565,10 @@ function SheetGrid({
           />
           <button
             onClick={() => setShowColFilters(v => !v)}
-            className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
-              showColFilters || Object.values(colFilters).some(v => v.trim())
+            className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${showColFilters || Object.values(colFilters).some(v => v.trim())
                 ? 'bg-blue-50 border-blue-400 text-blue-700'
                 : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-            }`}
+              }`}
           >
             Column Filters {Object.values(colFilters).filter(v => v.trim()).length > 0 && `(${Object.values(colFilters).filter(v => v.trim()).length})`}
           </button>
@@ -698,7 +696,7 @@ function ConsumerFormModal({ mode, headers, initialRow, onClose, onSaved }) {
   async function handleSave() {
     setStatus(null);
     if (consIdx < 0) { setStatus({ type: 'error', msg: 'CONSCODE column not found in Masterlist headers.' }); return; }
-    if (!conscode)  { setStatus({ type: 'error', msg: 'CONSCODE is required.' }); return; }
+    if (!conscode) { setStatus({ type: 'error', msg: 'CONSCODE is required.' }); return; }
 
     const rowData = headers.map((_, i) => String(form[i] ?? ''));
 
@@ -776,13 +774,13 @@ function ConsumerFormModal({ mode, headers, initialRow, onClose, onSaved }) {
 }
 
 function ConsumersContent() {
-  const [smsToolOpen, setSmsToolOpen]             = useState(false);
-  const [consumerFormOpen, setConsumerFormOpen]   = useState(false);
-  const [consumerFormMode, setConsumerFormMode]   = useState('add'); // 'add' | 'edit'
-  const [editRow, setEditRow]                     = useState(null);
+  const [smsToolOpen, setSmsToolOpen] = useState(false);
+  const [consumerFormOpen, setConsumerFormOpen] = useState(false);
+  const [consumerFormMode, setConsumerFormMode] = useState('add'); // 'add' | 'edit'
+  const [editRow, setEditRow] = useState(null);
 
   const [filteredConsumers, setFilteredConsumers] = useState([]);
-  const [filteredHeaders, setFilteredHeaders]     = useState([]);
+  const [filteredHeaders, setFilteredHeaders] = useState([]);
 
   const masterlistApiUrl = `${API_BASE}/sheets/masterlist`;
 
@@ -901,13 +899,13 @@ function StatusBadge({ message, type }) {
   if (!message) return null;
   const styles = {
     success: 'bg-green-50 text-green-700 border-green-200',
-    error:   'bg-red-50 text-red-700 border-red-200',
-    info:    'bg-blue-50 text-blue-700 border-blue-200',
+    error: 'bg-red-50 text-red-700 border-red-200',
+    info: 'bg-blue-50 text-blue-700 border-blue-200',
   };
   const icons = {
     success: <CheckCircle className="w-4 h-4 shrink-0" />,
-    error:   <XCircle className="w-4 h-4 shrink-0" />,
-    info:    <AlertCircle className="w-4 h-4 shrink-0" />,
+    error: <XCircle className="w-4 h-4 shrink-0" />,
+    info: <AlertCircle className="w-4 h-4 shrink-0" />,
   };
   return (
     <div className={`flex items-center gap-2 px-3 py-2 rounded border text-sm mt-2 ${styles[type] || styles.info}`}>
@@ -919,8 +917,8 @@ function StatusBadge({ message, type }) {
 
 function SendProgress({ progress, onCancel }) {
   if (!progress) return null;
-  const pct     = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
-  const isDone  = progress.total > 0 && progress.done >= progress.total;
+  const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+  const isDone = progress.total > 0 && progress.done >= progress.total;
   return (
     <div className="mt-2 space-y-1">
       <div className="flex justify-between text-xs text-gray-600">
@@ -955,29 +953,29 @@ function SendProgress({ progress, onCancel }) {
 
 function ToolsContent() {
   // â”€â”€ Masterlist (consumer settings) â”€â”€
-  const [masterlistFile, setMasterlistFile]   = useState(null);
-  const [masterlist, setMasterlist]           = useState([]);   // parsed rows
+  const [masterlistFile, setMasterlistFile] = useState(null);
+  const [masterlist, setMasterlist] = useState([]);   // parsed rows
   const [masterlistStatus, setMasterlistStatus] = useState(null);
   const masterlistRef = useRef();
 
   // â”€â”€ Monthly Bill Upload â”€â”€
-  const [billsFiles, setBillsFiles]       = useState([]);
-  const [datePosted, setDatePosted]       = useState('');
-  const [dueDate, setDueDate]             = useState('');
-  const [disconDate, setDisconDate]       = useState('');
-  const [smsOnly, setSmsOnly]             = useState(false);
-  const [billsStatus, setBillsStatus]     = useState(null);
+  const [billsFiles, setBillsFiles] = useState([]);
+  const [datePosted, setDatePosted] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [disconDate, setDisconDate] = useState('');
+  const [smsOnly, setSmsOnly] = useState(false);
+  const [billsStatus, setBillsStatus] = useState(null);
   const [billsProcessing, setBillsProcessing] = useState(false);
-  const [billsPreview, setBillsPreview]   = useState(null);
-  const [billsSending, setBillsSending]   = useState(false);
+  const [billsPreview, setBillsPreview] = useState(null);
+  const [billsSending, setBillsSending] = useState(false);
   const [billsSendStatus, setBillsSendStatus] = useState(null);
   const [monthlyBillAddStatus, setMonthlyBillAddStatus] = useState(null);
   const billsRef = useRef();
 
   // â”€â”€ SMS Broadcast â”€â”€
-  const [notifType, setNotifType]           = useState('Due Date');
-  const [refDate, setRefDate]               = useState('');
-  const [broadcastFile, setBroadcastFile]   = useState(null);
+  const [notifType, setNotifType] = useState('Due Date');
+  const [refDate, setRefDate] = useState('');
+  const [broadcastFile, setBroadcastFile] = useState(null);
   const [broadcastStatus, setBroadcastStatus] = useState(null);
   const [broadcastProcessing, setBroadcastProcessing] = useState(false);
   const [broadcastPreview, setBroadcastPreview] = useState(null);
@@ -991,15 +989,15 @@ function ToolsContent() {
 
   // â”€â”€ SMS Templates â”€â”€
   const DEFAULT_BILL_TPL = `BogoWD(free,no reply): Your bill (Conscode: {conscode}) for THIS MONTH is {totalAmount}. Consumed {consumption} cubic. Due Date {dueDate}. Disconnection Date {disconDate}.`;
-  const DEFAULT_DUE_TPL  = `BogoWD(free,no reply): This is a reminder that your water bill is due on {date}. Water Fee: Php {waterFee}. Installation Fee: Php {installFee}. Meter Maintenance: Php {meterMaint}. Total Amount Due: Php {totalAmount}.`;
+  const DEFAULT_DUE_TPL = `BogoWD(free,no reply): Your bill (Conscode: {conscode}) with amount {totalAmount} will due on {date}. Disregard if payment made.`;
   const DEFAULT_DISC_TPL = `BogoWD(free,no reply): Your account is scheduled for disconnection on {date} due to unpaid balance. Water Fee: Php {waterFee}. Installation Fee: Php {installFee}. Meter Maintenance Fee: Php {meterMaint}. Penalty: Php {penalty}. Total Amount Due: Php {totalAmount}.`;
-  const DEFAULT_ADV_TPL  = `BogoWD(free,no reply): This is an advisory from CPMPC. {advisory} For inquiries, please contact our office. Thank you.`;
+  const DEFAULT_ADV_TPL = `BogoWD(free,no reply): This is an advisory from CPMPC. {advisory} For inquiries, please contact our office. Thank you.`;
 
-  const [billTpl,  setBillTpl]  = useState(DEFAULT_BILL_TPL);
-  const [dueTpl,   setDueTpl]   = useState(DEFAULT_DUE_TPL);
-  const [discTpl,  setDiscTpl]  = useState(DEFAULT_DISC_TPL);
-  const [advTpl,   setAdvTpl]   = useState(DEFAULT_ADV_TPL);
-  const [showTpl,  setShowTpl]  = useState(false);
+  const [billTpl, setBillTpl] = useState(DEFAULT_BILL_TPL);
+  const [dueTpl, setDueTpl] = useState(DEFAULT_DUE_TPL);
+  const [discTpl, setDiscTpl] = useState(DEFAULT_DISC_TPL);
+  const [advTpl, setAdvTpl] = useState(DEFAULT_ADV_TPL);
+  const [showTpl, setShowTpl] = useState(false);
   const [tplSaveStatus, setTplSaveStatus] = useState(null);
 
   // Load saved templates from server on mount
@@ -1007,12 +1005,12 @@ function ToolsContent() {
     fetch(`${API_BASE}/templates`)
       .then(r => r.json())
       .then(data => {
-        if (data.billTpl)  setBillTpl(data.billTpl);
-        if (data.dueTpl)   setDueTpl(data.dueTpl);
-        if (data.discTpl)  setDiscTpl(data.discTpl);
-        if (data.advTpl)   setAdvTpl(data.advTpl);
+        if (data.billTpl) setBillTpl(data.billTpl);
+        if (data.dueTpl) setDueTpl(data.dueTpl);
+        if (data.discTpl) setDiscTpl(data.discTpl);
+        if (data.advTpl) setAdvTpl(data.advTpl);
       })
-      .catch(() => {}); // silently ignore if server not available
+      .catch(() => { }); // silently ignore if server not available
   }, []);
 
   async function handleSaveTemplates() {
@@ -1055,14 +1053,14 @@ function ToolsContent() {
     tpl.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`);
 
   const formatBillSMS = (consumer, bill, dp, dd, dc) => {
-    const name          = consumer['NAME'] || consumer.name || consumer.consumer_name || 'Consumer';
+    const name = consumer['NAME'] || consumer.name || consumer.consumer_name || 'Consumer';
     const accountNumber = consumer['ACCOUNT_NUMBER'] || consumer.account_number || '';
-    const conscode      = bill['Conscode']         || bill['conscode']          || Object.values(bill)[0] || '';
-    const consumption   = bill['Consumption']      || bill['consumption']       || '';
-    const waterFee      = (parseFloat((bill['Water Fee'] || bill['water_fee'] || bill['WaterFee'] || '0').replace(/,/g, '') || 0) * 1.02).toFixed(2);
-    const installFee    = bill['Installation Fee'] || bill['installation_fee']  || bill['InstallationFee'] || '0.00';
-    const meterMaint    = bill['Meter Maintenance']|| bill['meter_maintenance'] || bill['MeterMaintenance']|| '0.00';
-    const totalAmount   = (
+    const conscode = bill['Conscode'] || bill['conscode'] || Object.values(bill)[0] || '';
+    const consumption = bill['Consumption'] || bill['consumption'] || '';
+    const waterFee = (parseFloat((bill['Water Fee'] || bill['water_fee'] || bill['WaterFee'] || '0').replace(/,/g, '') || 0) * 1.02).toFixed(2);
+    const installFee = bill['Installation'] || bill['Installation Fee'] || bill['installation_fee'] || bill['InstallationFee'] || '0.00';
+    const meterMaint = bill['Meter Maintenance'] || bill['meter_maintenance'] || bill['MeterMaintenance'] || '0.00';
+    const totalAmount = (
       parseFloat(waterFee) +
       parseFloat(installFee.replace(/,/g, '') || 0) +
       parseFloat(meterMaint.replace(/,/g, '') || 0)
@@ -1075,27 +1073,28 @@ function ToolsContent() {
   };
 
   const extractFees = (row) => {
-    const waterFee   = (parseFloat((row['Water Fee'] || row['water_fee'] || row['WaterFee'] || '0').replace(/,/g, '') || 0) * 1.02).toFixed(2);
-    const installFee = row['Installation Fee']      || row['installation_fee']   || row['InstallationFee']      || '0.00';
+    const waterFee = (parseFloat((row['Water Fee'] || row['water_fee'] || row['WaterFee'] || '0').replace(/,/g, '') || 0) * 1.02).toFixed(2);
+    const installFee = row['Installation'] || row['Installation Fee'] || row['installation_fee'] || row['InstallationFee'] || '0.00';
     // Handle both "Meter Maintenance" (bills/due) and "Meter Maintenance Fee" (disconnection)
-    const meterMaint = row['Meter Maintenance Fee'] || row['Meter Maintenance']  || row['meter_maintenance_fee']
-                    || row['meter_maintenance']     || row['MeterMaintenanceFee'] || row['MeterMaintenance']    || '0.00';
-    const penalty    = row['Penalty']               || row['penalty']            || '0.00';
+    const meterMaint = row['Meter Maintenance Fee'] || row['Meter Maintenance'] || row['meter_maintenance_fee']
+      || row['meter_maintenance'] || row['MeterMaintenanceFee'] || row['MeterMaintenance'] || '0.00';
+    const penalty = row['Penalty'] || row['penalty'] || '0.00';
     const totalAmount = (
       parseFloat(waterFee) +
       parseFloat(installFee.replace(/,/g, '') || 0) +
       parseFloat(meterMaint.replace(/,/g, '') || 0) +
-      parseFloat(penalty.replace(/,/g, '')    || 0)
+      parseFloat(penalty.replace(/,/g, '') || 0)
     ).toFixed(2);
     return { waterFee, installFee, meterMaint, penalty, totalAmount };
   };
 
   const formatBroadcastSMS = (consumer, type, date, row = {}) => {
-    const name          = consumer['NAME'] || consumer.name || consumer.consumer_name || 'Consumer';
+    const name = consumer['NAME'] || consumer.name || consumer.consumer_name || 'Consumer';
     const accountNumber = consumer['ACCOUNT_NUMBER'] || consumer.account_number || '';
-    const tpl           = type === 'Due Date' ? dueTpl : type === 'Disconnection Date' ? discTpl : advTpl;
-    const advisory      = row['Advisory'] || '';
-    return applyTemplate(tpl, { name, accountNumber, date, advisory, ...extractFees(row) });
+    const conscode = row['Conscode'] || consumer['CONSCODE'] || '';
+    const tpl = type === 'Due Date' ? dueTpl : type === 'Disconnection Date' ? discTpl : advTpl;
+    const advisory = row['Advisory'] || '';
+    return applyTemplate(tpl, { name, accountNumber, conscode, date, advisory, ...extractFees(row) });
   };
 
   const formatDate = (d) => {
@@ -1108,7 +1107,7 @@ function ToolsContent() {
     if (!raw) return '';
     let n = String(raw).replace(/[\s\-()+]/g, ''); // strip spaces, dashes, parens, +
     if (n.startsWith('63') && n.length === 12) n = '0' + n.slice(2); // 639xxxxxxxxx â†’ 09xxxxxxxxx
-    if (n.startsWith('9')  && n.length === 10) n = '0' + n;          // 9xxxxxxxxx   â†’ 09xxxxxxxxx
+    if (n.startsWith('9') && n.length === 10) n = '0' + n;          // 9xxxxxxxxx   â†’ 09xxxxxxxxx
     return /^09\d{9}$/.test(n) ? n : '';              // must be valid 09XXXXXXXXX (11 digits)
   };
 
@@ -1123,8 +1122,8 @@ function ToolsContent() {
   async function handleMasterlistUpload() {
     if (!masterlistFile) { setMasterlistStatus({ type: 'error', msg: 'Please select a CSV file.' }); return; }
     try {
-      const text  = await readFile(masterlistFile);
-      const rows  = parseCSV(text);
+      const text = await readFile(masterlistFile);
+      const rows = parseCSV(text);
       setMasterlist(rows);
       setMasterlistStatus({ type: 'success', msg: `${rows.length} consumer records loaded successfully.` });
     } catch {
@@ -1133,17 +1132,16 @@ function ToolsContent() {
   }
 
   async function handleBillsUpload() {
-    if (!billsFiles.length)  { setBillsStatus({ type: 'error', msg: 'Please select at least one CSV Bills file.' }); return; }
-    if (!masterlist.length)  { setBillsStatus({ type: 'error', msg: 'Load the Consumer Masterlist first.' }); return; }
-    if (!datePosted || !dueDate || !disconDate)
-                             { setBillsStatus({ type: 'error', msg: 'Fill in Date Posted, Due Date and Disconnection Date.' }); return; }
+    if (!billsFiles.length) { setBillsStatus({ type: 'error', msg: 'Please select at least one CSV Bills file.' }); return; }
+    if (!masterlist.length) { setBillsStatus({ type: 'error', msg: 'Load the Consumer Masterlist first.' }); return; }
+    if (!datePosted || !dueDate || !disconDate) { setBillsStatus({ type: 'error', msg: 'Fill in Date Posted, Due Date and Disconnection Date.' }); return; }
 
     setBillsProcessing(true);
     setBillsStatus(null);
     setMonthlyBillAddStatus(null);
     setBillsPreview(null);
     try {
-      const BILL_COLS = ['Conscode', 'Consumption', 'Water Fee', 'Installation Fee', 'Meter Maintenance'];
+      const BILL_COLS = ['Conscode', 'Consumption', 'Water Fee', 'Installation', 'Meter Maintenance'];
 
       // Parse all selected files and combine rows
       const bills = [];
@@ -1194,16 +1192,16 @@ function ToolsContent() {
       const results = [];
 
       for (const bill of bills) {
-        const code     = bill['Conscode'].trim();
+        const code = bill['Conscode'].trim();
         const consumer = findConsumer(code);
         if (!consumer) { results.push({ code, status: 'not_found' }); continue; }
-        const phone    = getPhone(consumer);
-        const sms      = formatBillSMS(consumer, bill, formatDate(datePosted), formatDate(dueDate), formatDate(disconDate));
+        const phone = getPhone(consumer);
+        const sms = formatBillSMS(consumer, bill, formatDate(datePosted), formatDate(dueDate), formatDate(disconDate));
         results.push({ code, phone, sms, status: phone ? 'ready' : 'no_phone' });
       }
 
-      const ready    = results.filter(r => r.status === 'ready').length;
-      const noPhone  = results.filter(r => r.status === 'no_phone').length;
+      const ready = results.filter(r => r.status === 'ready').length;
+      const noPhone = results.filter(r => r.status === 'no_phone').length;
       const notFound = results.filter(r => r.status === 'not_found').length;
 
       setBillsPreview({ results, ready, noPhone, notFound });
@@ -1234,7 +1232,7 @@ function ToolsContent() {
       if (abortRef.current) { cancelled = true; break; }
       const chunk = allMessages.slice(i, i + CHUNK);
       try {
-        const res  = await fetch(`${API_BASE}/sms/send-bulk`, {
+        const res = await fetch(`${API_BASE}/sms/send-bulk`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: chunk }),
         });
@@ -1255,15 +1253,15 @@ function ToolsContent() {
       fetch(`${API_BASE}/logs`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: 'System', logCode: 'Monthly Bill', sent: totalSent, failed: totalFailed }),
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }
 
   async function handleBroadcast() {
     const isAdvisory = notifType === 'Advisory';
-    if (!masterlist.length)              { setBroadcastStatus({ type: 'error', msg: 'Load the Consumer Masterlist first.' }); return; }
-    if (!isAdvisory && !broadcastFile)   { setBroadcastStatus({ type: 'error', msg: 'Please select a CSV file.' }); return; }
-    if (!isAdvisory && !refDate)         { setBroadcastStatus({ type: 'error', msg: 'Enter the Reference Date.' }); return; }
+    if (!masterlist.length) { setBroadcastStatus({ type: 'error', msg: 'Load the Consumer Masterlist first.' }); return; }
+    if (!isAdvisory && !broadcastFile) { setBroadcastStatus({ type: 'error', msg: 'Please select a CSV file.' }); return; }
+    if (!isAdvisory && !refDate) { setBroadcastStatus({ type: 'error', msg: 'Enter the Reference Date.' }); return; }
 
     setBroadcastProcessing(true);
     setBroadcastStatus(null);
@@ -1275,14 +1273,14 @@ function ToolsContent() {
       if (isAdvisory) {
         // Send to all consumers in the masterlist
         for (const consumer of masterlist) {
-          const code  = String(consumer['CONSCODE'] || Object.values(consumer)[0] || '').trim();
+          const code = String(consumer['CONSCODE'] || Object.values(consumer)[0] || '').trim();
           const phone = getPhone(consumer);
-          const sms   = formatBroadcastSMS(consumer, notifType, formatDate(refDate), {});
+          const sms = formatBroadcastSMS(consumer, notifType, formatDate(refDate), {});
           results.push({ code, phone, sms, status: phone ? 'ready' : 'no_phone' });
         }
       } else {
-        const BROADCAST_COLS = ['Conscode', 'Consumption', 'Water Fee', 'Installation Fee', 'Meter Maintenance', 'Penalty'];
-        const rawText  = await readFile(broadcastFile);
+        const BROADCAST_COLS = ['Conscode', 'Water Fee', 'Installation', 'Meter Maintenance'];
+        const rawText = await readFile(broadcastFile);
         const rawLines = rawText.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
           .trim().split('\n').filter(l => l.trim());
         const firstCell = splitCSVLine(rawLines[0])[0].replace(/^\uFEFF/, '').trim();
@@ -1296,17 +1294,17 @@ function ToolsContent() {
         });
 
         for (const row of rows) {
-          const code     = row['Conscode'].trim();
+          const code = row['Conscode'].trim();
           const consumer = findConsumer(code);
           if (!consumer) { results.push({ code, status: 'not_found' }); continue; }
           const phone = getPhone(consumer);
-          const sms   = formatBroadcastSMS(consumer, notifType, formatDate(refDate), row);
+          const sms = formatBroadcastSMS(consumer, notifType, formatDate(refDate), row);
           results.push({ code, phone, sms, status: phone ? 'ready' : 'no_phone' });
         }
       }
 
-      const ready    = results.filter(r => r.status === 'ready').length;
-      const noPhone  = results.filter(r => r.status === 'no_phone').length;
+      const ready = results.filter(r => r.status === 'ready').length;
+      const noPhone = results.filter(r => r.status === 'no_phone').length;
       const notFound = results.filter(r => r.status === 'not_found').length;
 
       setBroadcastPreview({ results, ready, noPhone, notFound });
@@ -1337,7 +1335,7 @@ function ToolsContent() {
       if (abortRef.current) { cancelled = true; break; }
       const chunk = allMessages.slice(i, i + CHUNK);
       try {
-        const res  = await fetch(`${API_BASE}/sms/send-bulk`, {
+        const res = await fetch(`${API_BASE}/sms/send-bulk`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: chunk }),
         });
@@ -1358,15 +1356,15 @@ function ToolsContent() {
       fetch(`${API_BASE}/logs`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: 'System', logCode: notifType, sent: totalSent, failed: totalFailed }),
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }
 
   // â”€â”€ Shared input styles â”€â”€
-  const inputCls  = 'border border-gray-300 rounded px-2 py-1 text-[16px] w-full focus:outline-none focus:border-blue-400';
-  const btnCls    = 'bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-1.5 rounded transition-colors disabled:opacity-50';
+  const inputCls = 'border border-gray-300 rounded px-2 py-1 text-[16px] w-full focus:outline-none focus:border-blue-400';
+  const btnCls = 'bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-1.5 rounded transition-colors disabled:opacity-50';
   const sectionHd = 'bg-gray-200 border border-gray-300 px-3 py-1.5 text-xs font-bold text-gray-700 uppercase tracking-wide';
-  const cellCls   = 'border border-gray-300 px-4 py-3 align-top bg-gray-50';
+  const cellCls = 'border border-gray-300 px-4 py-3 align-top bg-gray-50';
 
   return (
     <div className="p-4 space-y-4 text-sm text-gray-700">
@@ -1399,7 +1397,7 @@ function ToolsContent() {
               />
               <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">
                 Variables:{' '}
-                {['{name}','{accountNumber}','{conscode}','{consumption}','{waterFee}','{installFee}','{meterMaint}','{totalAmount}','{datePosted}','{dueDate}','{disconDate}'].map(v => (
+                {['{name}', '{accountNumber}', '{conscode}', '{consumption}', '{waterFee}', '{installFee}', '{meterMaint}', '{totalAmount}', '{datePosted}', '{dueDate}', '{disconDate}'].map(v => (
                   <code key={v} className="bg-gray-100 px-1 rounded mr-1">{v}</code>
                 ))}
               </p>
@@ -1420,7 +1418,7 @@ function ToolsContent() {
               />
               <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">
                 Variables:{' '}
-                {['{name}','{accountNumber}','{date}','{waterFee}','{installFee}','{meterMaint}','{totalAmount}'].map(v => (
+                {['{name}', '{accountNumber}', '{date}', '{waterFee}', '{installFee}', '{meterMaint}', '{totalAmount}'].map(v => (
                   <code key={v} className="bg-gray-100 px-1 rounded mr-1">{v}</code>
                 ))}
               </p>
@@ -1441,7 +1439,7 @@ function ToolsContent() {
               />
               <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">
                 Variables:{' '}
-                {['{name}','{accountNumber}','{date}','{waterFee}','{installFee}','{meterMaint}','{penalty}','{totalAmount}'].map(v => (
+                {['{name}', '{accountNumber}', '{date}', '{waterFee}', '{installFee}', '{meterMaint}', '{penalty}', '{totalAmount}'].map(v => (
                   <code key={v} className="bg-gray-100 px-1 rounded mr-1">{v}</code>
                 ))}
               </p>
@@ -1462,7 +1460,7 @@ function ToolsContent() {
               />
               <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">
                 Variables:{' '}
-                {['{name}','{accountNumber}','{date}','{advisory}'].map(v => (
+                {['{name}', '{accountNumber}', '{date}', '{advisory}'].map(v => (
                   <code key={v} className="bg-gray-100 px-1 rounded mr-1">{v}</code>
                 ))}
               </p>
@@ -1489,114 +1487,114 @@ function ToolsContent() {
       <div className="border border-gray-300 rounded overflow-hidden">
         <div className={sectionHd}>Tools</div>
         <div className="flex flex-col md:flex-row">
-              {/* Left: Consumer Masterlist */}
-              <div className={`${cellCls} md:w-1/2`}>
-                <p className="font-bold text-gray-600 border-b border-gray-300 pb-1 mb-3 text-xs uppercase tracking-wide">
-                  Consumers Settings Upload
+          {/* Left: Consumer Masterlist */}
+          <div className={`${cellCls} md:w-1/2`}>
+            <p className="font-bold text-gray-600 border-b border-gray-300 pb-1 mb-3 text-xs uppercase tracking-wide">
+              Consumers Settings Upload
+            </p>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">CSV Consumers (Masterlist)</p>
+                <input
+                  ref={masterlistRef}
+                  type="file" accept=".csv"
+                  className="text-[16px] text-gray-600 file:mr-2 file:py-1 file:px-3 file:border file:border-gray-300 file:rounded file:text-[16px] file:bg-white file:cursor-pointer cursor-pointer"
+                  onChange={e => { setMasterlistFile(e.target.files[0] || null); setMasterlistStatus(null); }}
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500">Upload</span>
+                <button className={btnCls} onClick={handleMasterlistUpload}>
+                  CONTINUE
+                </button>
+              </div>
+              <StatusBadge message={masterlistStatus?.msg} type={masterlistStatus?.type} />
+              {masterlist.length > 0 && (
+                <p className="text-xs text-green-600 font-medium">
+                  ✓ Masterlist active — {masterlist.length} records
                 </p>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">CSV Consumers (Masterlist)</p>
-                    <input
-                      ref={masterlistRef}
-                      type="file" accept=".csv"
-                      className="text-[16px] text-gray-600 file:mr-2 file:py-1 file:px-3 file:border file:border-gray-300 file:rounded file:text-[16px] file:bg-white file:cursor-pointer cursor-pointer"
-                      onChange={e => { setMasterlistFile(e.target.files[0] || null); setMasterlistStatus(null); }}
-                    />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500">Upload</span>
-                    <button className={btnCls} onClick={handleMasterlistUpload}>
-                      CONTINUE
-                    </button>
-                  </div>
-                  <StatusBadge message={masterlistStatus?.msg} type={masterlistStatus?.type} />
-                  {masterlist.length > 0 && (
-                    <p className="text-xs text-green-600 font-medium">
-                      ✓ Masterlist active — {masterlist.length} records
-                    </p>
-                  )}
+              )}
+            </div>
+          </div>
+
+          {/* Right: Monthly Bill Upload */}
+          <div className={`${cellCls} md:w-1/2`}>
+            <p className="font-bold text-gray-600 border-b border-gray-300 pb-1 mb-3 text-xs uppercase tracking-wide">
+              Monthly Bill Upload
+            </p>
+            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+              This process will automatically send the Date Posted SMS notification
+              to the users in the CSV.
+            </p>
+            <div className="space-y-2">
+              {[
+                ['Date Posted', datePosted, setDatePosted],
+                ['Due Date', dueDate, setDueDate],
+                ['Disconnection Date', disconDate, setDisconDate],
+              ].map(([label, val, set]) => (
+                <div key={label} className="flex flex-col gap-0.5">
+                  <span className="text-xs text-gray-600">{label}</span>
+                  <input type="date" value={val}
+                    onChange={e => set(e.target.value)}
+                    className={inputCls}
+                  />
                 </div>
+              ))}
+
+              <div className="flex flex-col gap-0.5 pt-1">
+                <span className="text-xs text-gray-600">SMS Only</span>
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-600">
+                  <input type="checkbox" checked={smsOnly} onChange={e => setSmsOnly(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-blue-600"
+                  />
+                  Skip saving to Google Sheet (LatestBill)
+                </label>
               </div>
 
-              {/* Right: Monthly Bill Upload */}
-              <div className={`${cellCls} md:w-1/2`}>
-                <p className="font-bold text-gray-600 border-b border-gray-300 pb-1 mb-3 text-xs uppercase tracking-wide">
-                  Monthly Bill Upload
-                </p>
-                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                  This process will automatically send the Date Posted SMS notification
-                  to the users in the CSV.
-                </p>
-                <div className="space-y-2">
-                  {[
-                    ['Date Posted',        datePosted,  setDatePosted],
-                    ['Due Date',           dueDate,     setDueDate],
-                    ['Disconnection Date', disconDate,  setDisconDate],
-                  ].map(([label, val, set]) => (
-                    <div key={label} className="flex flex-col gap-0.5">
-                      <span className="text-xs text-gray-600">{label}</span>
-                      <input type="date" value={val}
-                        onChange={e => set(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
-                  ))}
-
-                  <div className="flex flex-col gap-0.5 pt-1">
-                    <span className="text-xs text-gray-600">SMS Only</span>
-                    <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-600">
-                      <input type="checkbox" checked={smsOnly} onChange={e => setSmsOnly(e.target.checked)}
-                        className="w-3.5 h-3.5 accent-blue-600"
-                      />
-                      Skip saving to Google Sheet (LatestBill)
-                    </label>
-                  </div>
-
-                  <div className="pt-1">
-                    <p className="text-xs text-gray-500 mb-1">CSV Bills</p>
-                    <input
-                      ref={billsRef}
-                      type="file" accept=".csv" multiple
-                      className="text-[16px] text-gray-600 file:mr-2 file:py-1 file:px-3 file:border file:border-gray-300 file:rounded file:text-[16px] file:bg-white file:cursor-pointer cursor-pointer"
-                      onChange={e => {
-                        const newFiles = Array.from(e.target.files);
-                        setBillsFiles(prev => {
-                          const existing = prev.map(f => f.name);
-                          const toAdd = newFiles.filter(f => !existing.includes(f.name));
-                          return [...prev, ...toAdd];
-                        });
-                        setBillsStatus(null);
-                        setBillsPreview(null);
-                        e.target.value = '';
-                      }}
-                    />
-                    {billsFiles.length > 0 && (
-                      <ul className="mt-1.5 space-y-0.5">
-                        {billsFiles.map((f, i) => (
-                          <li key={i} className="flex items-center justify-between text-[10px] bg-blue-50 border border-blue-100 rounded px-2 py-0.5">
-                            <span className="text-blue-700 truncate">{f.name}</span>
-                            <button
-                              className="text-red-400 hover:text-red-600 ml-2 shrink-0"
-                              onClick={() => { setBillsFiles(prev => prev.filter((_, j) => j !== i)); setBillsPreview(null); }}
-                            >âœ•</button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500">Upload</span>
-                    <button className={btnCls} onClick={handleBillsUpload} disabled={billsProcessing}>
-                      {billsProcessing ? 'PROCESSING…' : 'CONTINUE'}
-                    </button>
-                  </div>
-
-                  <StatusBadge message={billsStatus?.msg} type={billsStatus?.type} />
-                  <StatusBadge message={monthlyBillAddStatus?.msg} type={monthlyBillAddStatus?.type} />
-                </div>
+              <div className="pt-1">
+                <p className="text-xs text-gray-500 mb-1">CSV Bills</p>
+                <input
+                  ref={billsRef}
+                  type="file" accept=".csv" multiple
+                  className="text-[16px] text-gray-600 file:mr-2 file:py-1 file:px-3 file:border file:border-gray-300 file:rounded file:text-[16px] file:bg-white file:cursor-pointer cursor-pointer"
+                  onChange={e => {
+                    const newFiles = Array.from(e.target.files);
+                    setBillsFiles(prev => {
+                      const existing = prev.map(f => f.name);
+                      const toAdd = newFiles.filter(f => !existing.includes(f.name));
+                      return [...prev, ...toAdd];
+                    });
+                    setBillsStatus(null);
+                    setBillsPreview(null);
+                    e.target.value = '';
+                  }}
+                />
+                {billsFiles.length > 0 && (
+                  <ul className="mt-1.5 space-y-0.5">
+                    {billsFiles.map((f, i) => (
+                      <li key={i} className="flex items-center justify-between text-[10px] bg-blue-50 border border-blue-100 rounded px-2 py-0.5">
+                        <span className="text-blue-700 truncate">{f.name}</span>
+                        <button
+                          className="text-red-400 hover:text-red-600 ml-2 shrink-0"
+                          onClick={() => { setBillsFiles(prev => prev.filter((_, j) => j !== i)); setBillsPreview(null); }}
+                        >âœ•</button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500">Upload</span>
+                <button className={btnCls} onClick={handleBillsUpload} disabled={billsProcessing}>
+                  {billsProcessing ? 'PROCESSING…' : 'CONTINUE'}
+                </button>
+              </div>
+
+              <StatusBadge message={billsStatus?.msg} type={billsStatus?.type} />
+              <StatusBadge message={monthlyBillAddStatus?.msg} type={monthlyBillAddStatus?.type} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1615,7 +1613,7 @@ function ToolsContent() {
             <table className="w-full text-xs border-collapse">
               <thead className="bg-gray-100 sticky top-0">
                 <tr>
-                  {['Consumer Code','Phone','Status','SMS Preview'].map(h => (
+                  {['Consumer Code', 'Phone', 'Status', 'SMS Preview'].map(h => (
                     <th key={h} className="border border-gray-300 px-2 py-1 text-left font-semibold text-gray-600">{h}</th>
                   ))}
                 </tr>
@@ -1626,8 +1624,8 @@ function ToolsContent() {
                     <td className="border border-gray-200 px-2 py-1 font-mono">{r.code}</td>
                     <td className="border border-gray-200 px-2 py-1">{r.phone || '—'}</td>
                     <td className="border border-gray-200 px-2 py-1">
-                      {r.status === 'ready'     && <span className="text-green-600 font-semibold">Ready</span>}
-                      {r.status === 'no_phone'  && <span className="text-yellow-600 font-semibold">No Phone</span>}
+                      {r.status === 'ready' && <span className="text-green-600 font-semibold">Ready</span>}
+                      {r.status === 'no_phone' && <span className="text-yellow-600 font-semibold">No Phone</span>}
                       {r.status === 'not_found' && <span className="text-red-500 font-semibold">Not Found</span>}
                     </td>
                     <td className="border border-gray-200 px-2 py-1 text-gray-500 truncate max-w-xs">{r.sms || '—'}</td>
@@ -1724,7 +1722,7 @@ function ToolsContent() {
             <table className="w-full text-xs border-collapse">
               <thead className="bg-gray-100 sticky top-0">
                 <tr>
-                  {['Consumer Code','Phone','Status','SMS Preview'].map(h => (
+                  {['Consumer Code', 'Phone', 'Status', 'SMS Preview'].map(h => (
                     <th key={h} className="border border-gray-300 px-2 py-1 text-left font-semibold text-gray-600">{h}</th>
                   ))}
                 </tr>
@@ -1735,8 +1733,8 @@ function ToolsContent() {
                     <td className="border border-gray-200 px-2 py-1 font-mono">{r.code}</td>
                     <td className="border border-gray-200 px-2 py-1">{r.phone || '—'}</td>
                     <td className="border border-gray-200 px-2 py-1">
-                      {r.status === 'ready'     && <span className="text-green-600 font-semibold">Ready</span>}
-                      {r.status === 'no_phone'  && <span className="text-yellow-600 font-semibold">No Phone</span>}
+                      {r.status === 'ready' && <span className="text-green-600 font-semibold">Ready</span>}
+                      {r.status === 'no_phone' && <span className="text-yellow-600 font-semibold">No Phone</span>}
                       {r.status === 'not_found' && <span className="text-red-500 font-semibold">Not Found</span>}
                     </td>
                     <td className="border border-gray-200 px-2 py-1 text-gray-500 truncate max-w-xs">{r.sms || '—'}</td>
@@ -1837,12 +1835,12 @@ const ROLES = ['admin', 'manager', 'cashier'];
 function UsersContent({ employee }) {
   const isAdmin = employee?.role === 'admin';
 
-  const [users, setUsers]         = useState([]);
-  const [loading, setLoading]     = useState(true);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [showForm, setShowForm]   = useState(false);
-  const [editUser, setEditUser]   = useState(null);   // null = add, object = edit
-  const [saving, setSaving]       = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editUser, setEditUser] = useState(null);   // null = add, object = edit
+  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
@@ -1884,13 +1882,13 @@ function UsersContent({ employee }) {
 
     setSaving(true);
     try {
-      const url    = editUser ? `${API_BASE}/auth/employees/${editUser.id}` : `${API_BASE}/auth/employees`;
+      const url = editUser ? `${API_BASE}/auth/employees/${editUser.id}` : `${API_BASE}/auth/employees`;
       const method = editUser ? 'PUT' : 'POST';
-      const body   = editUser
+      const body = editUser
         ? { name: form.name, email: form.email, role: form.role, active: form.active, ...(form.password ? { password: form.password } : {}) }
         : { username: form.username, name: form.name, email: form.email, role: form.role, password: form.password };
 
-      const res  = await fetch(url, { method, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res = await fetch(url, { method, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!data.success) { setFormError(data.error || 'Failed to save.'); }
       else { setFormSuccess(editUser ? 'User updated.' : 'User created.'); load(); if (!editUser) setForm(emptyForm); }
@@ -1956,7 +1954,7 @@ function UsersContent({ employee }) {
               </div>
             )}
           </div>
-          {formError   && <div className="px-4 pb-2 text-xs text-red-600 font-medium">{formError}</div>}
+          {formError && <div className="px-4 pb-2 text-xs text-red-600 font-medium">{formError}</div>}
           {formSuccess && <div className="px-4 pb-2 text-xs text-green-600 font-medium">{formSuccess}</div>}
           <div className="px-4 pb-3 flex gap-2">
             <button onClick={handleSave} disabled={saving}
@@ -2021,14 +2019,14 @@ function UsersContent({ employee }) {
 }
 
 function ChatBotContent() {
-  const [headers, setHeaders]   = useState([]);
-  const [rows, setRows]         = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState('');
-  const [editRow, setEditRow]   = useState(null); // { _row, ...fields }
+  const [headers, setHeaders] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [editRow, setEditRow] = useState(null); // { _row, ...fields }
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm]         = useState({});
-  const [saving, setSaving]     = useState(false);
+  const [form, setForm] = useState({});
+  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
   const API = `${API_BASE}/chatbot`;
@@ -2184,10 +2182,10 @@ const SERVICE_CONFIGS = [
     tabName: 'BillInquiries',
     headers: ['Name', 'Conscode', 'Account Number', 'Notes', 'Status'],
     fields: [
-      { key: 'name',          label: 'Full Name',       type: 'text',     required: true  },
-      { key: 'conscode',      label: 'Conscode',        type: 'text',     required: true  },
-      { key: 'accountNumber', label: 'Account Number',  type: 'text',     required: false },
-      { key: 'notes',         label: 'Notes',           type: 'textarea', required: false },
+      { key: 'name', label: 'Full Name', type: 'text', required: true },
+      { key: 'conscode', label: 'Conscode', type: 'text', required: true },
+      { key: 'accountNumber', label: 'Account Number', type: 'text', required: false },
+      { key: 'notes', label: 'Notes', type: 'textarea', required: false },
     ],
   },
   {
@@ -2195,15 +2193,17 @@ const SERVICE_CONFIGS = [
     tabName: 'PaymentRecords',
     headers: ['Name', 'Conscode', 'Account Number', 'Amount Paid', 'Payment Date', 'Mode of Payment', 'Reference Number', 'Remarks'],
     fields: [
-      { key: 'name',            label: 'Full Name',        type: 'text',     required: true  },
-      { key: 'conscode',        label: 'Conscode',         type: 'text',     required: false },
-      { key: 'accountNumber',   label: 'Account Number',   type: 'text',     required: false },
-      { key: 'amountPaid',      label: 'Amount Paid (₱)',  type: 'number',   required: true  },
-      { key: 'paymentDate',     label: 'Payment Date',     type: 'date',     required: true  },
-      { key: 'modeOfPayment',   label: 'Mode of Payment',  type: 'select',   required: true,
-        options: ['Cash', 'GCash', 'Maya', 'Bank Transfer', 'Other'] },
-      { key: 'referenceNumber', label: 'Reference Number', type: 'text',     required: false },
-      { key: 'remarks',         label: 'Remarks',          type: 'textarea', required: false },
+      { key: 'name', label: 'Full Name', type: 'text', required: true },
+      { key: 'conscode', label: 'Conscode', type: 'text', required: false },
+      { key: 'accountNumber', label: 'Account Number', type: 'text', required: false },
+      { key: 'amountPaid', label: 'Amount Paid (₱)', type: 'number', required: true },
+      { key: 'paymentDate', label: 'Payment Date', type: 'date', required: true },
+      {
+        key: 'modeOfPayment', label: 'Mode of Payment', type: 'select', required: true,
+        options: ['Cash', 'GCash', 'Maya', 'Bank Transfer', 'Other']
+      },
+      { key: 'referenceNumber', label: 'Reference Number', type: 'text', required: false },
+      { key: 'remarks', label: 'Remarks', type: 'textarea', required: false },
     ],
   },
   {
@@ -2211,13 +2211,15 @@ const SERVICE_CONFIGS = [
     tabName: 'LeakReports',
     headers: ['Name', 'Contact Number', 'Address', 'Location of Leak', 'Description', 'Urgency', 'Ticket Number'],
     fields: [
-      { key: 'name',           label: 'Full Name',        type: 'text',     required: true  },
-      { key: 'contactNumber',  label: 'Contact Number',   type: 'text',     required: true  },
-      { key: 'address',        label: 'Address',          type: 'text',     required: true  },
-      { key: 'leakLocation',   label: 'Location of Leak', type: 'map',      required: true  },
-      { key: 'description',    label: 'Description',      type: 'textarea', required: true  },
-      { key: 'urgency',        label: 'Urgency',          type: 'select',   required: true,
-        options: ['Low', 'Medium', 'High — Needs Immediate Attention'] },
+      { key: 'name', label: 'Full Name', type: 'text', required: true },
+      { key: 'contactNumber', label: 'Contact Number', type: 'text', required: true },
+      { key: 'address', label: 'Address', type: 'text', required: true },
+      { key: 'leakLocation', label: 'Location of Leak', type: 'map', required: true },
+      { key: 'description', label: 'Description', type: 'textarea', required: true },
+      {
+        key: 'urgency', label: 'Urgency', type: 'select', required: true,
+        options: ['Low', 'Medium', 'High — Needs Immediate Attention']
+      },
     ],
   },
   {
@@ -2225,12 +2227,14 @@ const SERVICE_CONFIGS = [
     tabName: 'BillingConcerns',
     headers: ['Name', 'Account Number', 'Contact Number', 'Concern Type', 'Description'],
     fields: [
-      { key: 'name',          label: 'Full Name',      type: 'text',     required: true  },
-      { key: 'accountNumber', label: 'Account Number', type: 'text',     required: true  },
-      { key: 'contactNumber', label: 'Contact Number', type: 'text',     required: true  },
-      { key: 'concernType',   label: 'Concern Type',   type: 'select',   required: true,
-        options: ['Overcharge', 'Incorrect Meter Reading', 'Penalty Dispute', 'Duplicate Bill', 'Others'] },
-      { key: 'description',   label: 'Description',    type: 'textarea', required: true  },
+      { key: 'name', label: 'Full Name', type: 'text', required: true },
+      { key: 'accountNumber', label: 'Account Number', type: 'text', required: true },
+      { key: 'contactNumber', label: 'Contact Number', type: 'text', required: true },
+      {
+        key: 'concernType', label: 'Concern Type', type: 'select', required: true,
+        options: ['Overcharge', 'Incorrect Meter Reading', 'Penalty Dispute', 'Duplicate Bill', 'Others']
+      },
+      { key: 'description', label: 'Description', type: 'textarea', required: true },
     ],
   },
   {
@@ -2238,14 +2242,18 @@ const SERVICE_CONFIGS = [
     tabName: 'ServiceApplications',
     headers: ['Applicant Name', 'Address', 'Contact Number', 'Email', 'Property Type', 'Connection Type'],
     fields: [
-      { key: 'applicantName',  label: 'Applicant Name',  type: 'text',   required: true  },
-      { key: 'address',        label: 'Address',         type: 'text',   required: true  },
-      { key: 'contactNumber',  label: 'Contact Number',  type: 'text',   required: true  },
-      { key: 'email',          label: 'Email',           type: 'email',  required: false },
-      { key: 'propertyType',   label: 'Property Type',   type: 'select', required: true,
-        options: ['Residential', 'Commercial', 'Industrial'] },
-      { key: 'connectionType', label: 'Connection Type', type: 'select', required: true,
-        options: ['New Connection', 'Transfer of Account', 'Additional Connection'] },
+      { key: 'applicantName', label: 'Applicant Name', type: 'text', required: true },
+      { key: 'address', label: 'Address', type: 'text', required: true },
+      { key: 'contactNumber', label: 'Contact Number', type: 'text', required: true },
+      { key: 'email', label: 'Email', type: 'email', required: false },
+      {
+        key: 'propertyType', label: 'Property Type', type: 'select', required: true,
+        options: ['Residential', 'Commercial', 'Industrial']
+      },
+      {
+        key: 'connectionType', label: 'Connection Type', type: 'select', required: true,
+        options: ['New Connection', 'Transfer of Account', 'Additional Connection']
+      },
     ],
   },
   {
@@ -2253,12 +2261,12 @@ const SERVICE_CONFIGS = [
     tabName: 'ReconnectRequests',
     headers: ['Name', 'Conscode', 'Account Number', 'Contact Number', 'Address', 'Reason for Disconnection'],
     fields: [
-      { key: 'name',          label: 'Full Name',                type: 'text',     required: true  },
-      { key: 'conscode',      label: 'Conscode',                 type: 'text',     required: false },
-      { key: 'accountNumber', label: 'Account Number',           type: 'text',     required: false },
-      { key: 'contactNumber', label: 'Contact Number',           type: 'text',     required: true  },
-      { key: 'address',       label: 'Address',                  type: 'text',     required: true  },
-      { key: 'reason',        label: 'Reason for Disconnection', type: 'textarea', required: true  },
+      { key: 'name', label: 'Full Name', type: 'text', required: true },
+      { key: 'conscode', label: 'Conscode', type: 'text', required: false },
+      { key: 'accountNumber', label: 'Account Number', type: 'text', required: false },
+      { key: 'contactNumber', label: 'Contact Number', type: 'text', required: true },
+      { key: 'address', label: 'Address', type: 'text', required: true },
+      { key: 'reason', label: 'Reason for Disconnection', type: 'textarea', required: true },
     ],
   },
   {
@@ -2266,13 +2274,15 @@ const SERVICE_CONFIGS = [
     tabName: 'WaterIssues',
     headers: ['Name', 'Contact Number', 'Address', 'Issue Type', 'Date/Time Noticed', 'Description', 'Ticket Number'],
     fields: [
-      { key: 'name',          label: 'Full Name',         type: 'text',           required: true  },
-      { key: 'contactNumber', label: 'Contact Number',    type: 'text',           required: true  },
-      { key: 'address',       label: 'Address',           type: 'text',           required: true  },
-      { key: 'issueType',     label: 'Issue Type',        type: 'select',         required: true,
-        options: ['Low Water Pressure', 'No Water Supply', 'Discolored Water', 'Other'] },
-      { key: 'dateNoticed',   label: 'Date/Time Noticed', type: 'datetime-local', required: true  },
-      { key: 'description',   label: 'Description',       type: 'textarea',       required: false },
+      { key: 'name', label: 'Full Name', type: 'text', required: true },
+      { key: 'contactNumber', label: 'Contact Number', type: 'text', required: true },
+      { key: 'address', label: 'Address', type: 'text', required: true },
+      {
+        key: 'issueType', label: 'Issue Type', type: 'select', required: true,
+        options: ['Low Water Pressure', 'No Water Supply', 'Discolored Water', 'Other']
+      },
+      { key: 'dateNoticed', label: 'Date/Time Noticed', type: 'datetime-local', required: true },
+      { key: 'description', label: 'Description', type: 'textarea', required: false },
     ],
   },
   {
@@ -2280,10 +2290,10 @@ const SERVICE_CONFIGS = [
     tabName: 'SupportRequests',
     headers: ['Name', 'Contact Number', 'Subject', 'Message'],
     fields: [
-      { key: 'name',          label: 'Full Name',      type: 'text',     required: true },
-      { key: 'contactNumber', label: 'Contact Number', type: 'text',     required: true },
-      { key: 'subject',       label: 'Subject',        type: 'text',     required: true },
-      { key: 'message',       label: 'Message',        type: 'textarea', required: true },
+      { key: 'name', label: 'Full Name', type: 'text', required: true },
+      { key: 'contactNumber', label: 'Contact Number', type: 'text', required: true },
+      { key: 'subject', label: 'Subject', type: 'text', required: true },
+      { key: 'message', label: 'Message', type: 'textarea', required: true },
     ],
   },
   {
@@ -2291,20 +2301,22 @@ const SERVICE_CONFIGS = [
     tabName: 'PlumberRequests',
     headers: ['Full Name', 'Address', 'Phone Number', 'Email', 'Nature of Repair', 'Urgency'],
     fields: [
-      { key: 'name',          label: 'Full Name',         type: 'text',     required: true  },
-      { key: 'address',       label: 'Address',           type: 'text',     required: true  },
-      { key: 'phoneNumber',   label: 'Phone Number',      type: 'text',     required: true  },
-      { key: 'email',         label: 'Email Address',     type: 'email',    required: true  },
-      { key: 'natureRepair',  label: 'Nature of Repair',  type: 'textarea', required: true  },
-      { key: 'urgency',       label: 'Urgency',           type: 'select',   required: true,
-        options: ['Low — Schedule at convenience', 'Medium — Within the week', 'High — Urgent, needs immediate attention'] },
+      { key: 'name', label: 'Full Name', type: 'text', required: true },
+      { key: 'address', label: 'Address', type: 'text', required: true },
+      { key: 'phoneNumber', label: 'Phone Number', type: 'text', required: true },
+      { key: 'email', label: 'Email Address', type: 'email', required: true },
+      { key: 'natureRepair', label: 'Nature of Repair', type: 'textarea', required: true },
+      {
+        key: 'urgency', label: 'Urgency', type: 'select', required: true,
+        options: ['Low — Schedule at convenience', 'Medium — Within the week', 'High — Urgent, needs immediate attention']
+      },
     ],
   },
 ];
 
 function LocationPicker({ value, onChange }) {
-  const [loading, setLoading]   = useState(false);
-  const [coords, setCoords]     = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [coords, setCoords] = useState(null);
   const [geoError, setGeoError] = useState('');
 
   function pinMyLocation() {
@@ -2343,10 +2355,10 @@ function LocationPicker({ value, onChange }) {
 }
 
 function ServiceFormScreen({ config, onClose }) {
-  const [form, setForm]       = useState(Object.fromEntries(config.fields.map(f => [f.key, ''])));
-  const [submitting, setSub]  = useState(false);
+  const [form, setForm] = useState(Object.fromEntries(config.fields.map(f => [f.key, ''])));
+  const [submitting, setSub] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
   const [billData, setBillData] = useState(null);
   const [billNotFound, setBillNotFound] = useState(false);
   const [ticketNumber, setTicketNumber] = useState('');
@@ -2388,7 +2400,7 @@ function ServiceFormScreen({ config, onClose }) {
 
   async function handleSubmit(e) {
     e.preventDefault(); setError(''); setBillData(null); setBillNotFound(false); setLeakReportSubmitted(false); setWaterIssueSubmitted(false);
-    
+
     // Special handling for "View Bill" service
     if (config.label === 'View Bill') {
       const conscode = form.conscode?.trim();
@@ -2396,7 +2408,7 @@ function ServiceFormScreen({ config, onClose }) {
         setError('Please enter a Conscode');
         return;
       }
-      
+
       setSub(true);
       let billStatus = 'Failed';
       try {
@@ -2408,17 +2420,17 @@ function ServiceFormScreen({ config, onClose }) {
           throw new Error(`Server error (${res.status}): ${text.replace(/<[^>]+>/g, '').trim().slice(0, 200)}`);
         }
         if (!data.success) throw new Error(data.error || 'Failed to fetch bill data.');
-        
+
         // Search for the conscode in the rows
         const { headers, rows } = data;
         const conscodeIndex = headers.findIndex(h => h && h.toLowerCase() === 'conscode');
-        
+
         if (conscodeIndex === -1) {
           throw new Error('Conscode column not found in bill data.');
         }
-        
+
         const matchedRow = rows.find(row => row[conscodeIndex] && row[conscodeIndex].toString().trim().toLowerCase() === conscode.toLowerCase());
-        
+
         if (!matchedRow) {
           // Bill not found - save with Failed status and return
           billStatus = 'Failed';
@@ -2431,13 +2443,13 @@ function ServiceFormScreen({ config, onClose }) {
           setSub(false);
           return;
         }
-        
+
         // Build the bill data object
         const bill = {};
         headers.forEach((header, index) => {
           bill[header] = matchedRow[index] || '';
         });
-        
+
         // Bill found successfully - save with Success status
         billStatus = 'Success';
         const rowData = [form.name || '', form.conscode || '', form.accountNumber || '', form.notes || '', billStatus];
@@ -2445,9 +2457,9 @@ function ServiceFormScreen({ config, onClose }) {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
         });
-        
+
         setBillData(bill);
-      } catch (err) { 
+      } catch (err) {
         // Error occurred - save with Failed status
         billStatus = 'Failed';
         const rowData = [form.name || '', form.conscode || '', form.accountNumber || '', form.notes || '', billStatus];
@@ -2459,12 +2471,12 @@ function ServiceFormScreen({ config, onClose }) {
         } catch (saveErr) {
           console.error('Failed to save inquiry:', saveErr);
         }
-        setError(err.message); 
+        setError(err.message);
       }
       setSub(false);
       return;
     }
-    
+
     // Special handling for "Report a Leak" service
     if (config.label === 'Report a Leak') {
       setSub(true);
@@ -2472,7 +2484,7 @@ function ServiceFormScreen({ config, onClose }) {
         // Generate ticket number
         const ticket = generateTicketNumber();
         setTicketNumber(ticket);
-        
+
         // Fetch Hotlines tab to get the LeakReports hotline
         const hotlinesRes = await fetch(`${API_BASE}/sheets/get-tab?tab=Hotlines`);
         const hotlinesText = await hotlinesRes.text();
@@ -2480,22 +2492,22 @@ function ServiceFormScreen({ config, onClose }) {
         try { hotlinesData = JSON.parse(hotlinesText); } catch {
           throw new Error('Failed to fetch hotlines data');
         }
-        
+
         // Look for LeakReports row in Hotlines tab
         let hotlineNumber = '';
         if (hotlinesData.success && hotlinesData.rows) {
-          const hotlineRow = hotlinesData.rows.find(row => 
+          const hotlineRow = hotlinesData.rows.find(row =>
             row[0] && row[0].toString().toLowerCase().includes('leak')
           );
           if (hotlineRow && hotlineRow[2]) {
             hotlineNumber = hotlineRow[2].toString().trim();
           }
         }
-        
+
         if (!hotlineNumber) {
           console.warn('Hotline number not found for LeakReports');
         }
-        
+
         // Save to LeakReports with ticket number
         const rowData = [
           form.name || '',
@@ -2506,25 +2518,25 @@ function ServiceFormScreen({ config, onClose }) {
           form.urgency || '',
           ticket
         ];
-        
+
         const saveRes = await fetch(`${API_BASE}/sheets/service-request`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
         });
-        
+
         const saveText = await saveRes.text();
         let saveData;
         try { saveData = JSON.parse(saveText); } catch {
           throw new Error('Failed to save leak report');
         }
-        
+
         if (!saveData.success) throw new Error(saveData.error || 'Failed to save leak report');
-        
+
         // Send SMS notification to hotline if available
         if (hotlineNumber) {
           const smsMessage = `Leak Report Received\nTicket: ${ticket}\nLocation: ${form.address}\nUrgency: ${form.urgency}\nReporter: ${form.name} (${form.contactNumber})`;
-          
+
           try {
             await fetch(`${API_BASE}/sms/send-single`, {
               method: 'POST',
@@ -2539,7 +2551,7 @@ function ServiceFormScreen({ config, onClose }) {
             // Don't throw error - SMS failure shouldn't prevent form submission
           }
         }
-        
+
         // Show confirmation modal with ticket number
         setLeakReportSubmitted(true);
       } catch (err) {
@@ -2548,7 +2560,7 @@ function ServiceFormScreen({ config, onClose }) {
       setSub(false);
       return;
     }
-    
+
     // Special handling for "Low Pressure / No Water Report" service
     if (config.label === 'Low Pressure / No Water Report') {
       setSub(true);
@@ -2556,7 +2568,7 @@ function ServiceFormScreen({ config, onClose }) {
         // Generate ticket number
         const ticket = generateTicketNumber().replace('LEAK', 'WATER');
         setWaterIssueTicketNumber(ticket);
-        
+
         // Fetch Hotlines tab to get the water issues hotline
         const hotlinesRes = await fetch(`${API_BASE}/sheets/get-tab?tab=Hotlines`);
         const hotlinesText = await hotlinesRes.text();
@@ -2564,22 +2576,22 @@ function ServiceFormScreen({ config, onClose }) {
         try { hotlinesData = JSON.parse(hotlinesText); } catch {
           throw new Error('Failed to fetch hotlines data');
         }
-        
+
         // Look for Water or WaterIssues row in Hotlines tab
         let hotlineNumber = '';
         if (hotlinesData.success && hotlinesData.rows) {
-          const hotlineRow = hotlinesData.rows.find(row => 
+          const hotlineRow = hotlinesData.rows.find(row =>
             row[0] && (row[0].toString().toLowerCase().includes('water') || row[0].toString().toLowerCase().includes('pressure'))
           );
           if (hotlineRow && hotlineRow[2]) {
             hotlineNumber = hotlineRow[2].toString().trim();
           }
         }
-        
+
         if (!hotlineNumber) {
           console.warn('Hotline number not found for Water Issues');
         }
-        
+
         // Save to WaterIssues with ticket number
         const rowData = [
           form.name || '',
@@ -2590,25 +2602,25 @@ function ServiceFormScreen({ config, onClose }) {
           form.description || '',
           ticket
         ];
-        
+
         const saveRes = await fetch(`${API_BASE}/sheets/service-request`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
         });
-        
+
         const saveText = await saveRes.text();
         let saveData;
         try { saveData = JSON.parse(saveText); } catch {
           throw new Error('Failed to save water issue report');
         }
-        
+
         if (!saveData.success) throw new Error(saveData.error || 'Failed to save water issue report');
-        
+
         // Send SMS notification to hotline if available
         if (hotlineNumber) {
           const smsMessage = `Water Issue Report\nTicket: ${ticket}\nIssue: ${form.issueType}\nLocation: ${form.address}\nReporter: ${form.name} (${form.contactNumber})`;
-          
+
           try {
             await fetch(`${API_BASE}/sms/send-single`, {
               method: 'POST',
@@ -2623,7 +2635,7 @@ function ServiceFormScreen({ config, onClose }) {
             // Don't throw error - SMS failure shouldn't prevent form submission
           }
         }
-        
+
         // Show confirmation modal with ticket number
         setWaterIssueSubmitted(true);
       } catch (err) {
@@ -2632,12 +2644,12 @@ function ServiceFormScreen({ config, onClose }) {
       setSub(false);
       return;
     }
-    
+
     // Default handling for other services
     const rowData = config.fields.map(f => form[f.key] || '');
     setSub(true);
     try {
-      const res  = await fetch(`${API_BASE}/sheets/service-request`, {
+      const res = await fetch(`${API_BASE}/sheets/service-request`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tabName: config.tabName, headers: config.headers, rowData }),
       });
@@ -2651,7 +2663,7 @@ function ServiceFormScreen({ config, onClose }) {
     } catch (err) { setError(err.message); }
     setSub(false);
   }
-  
+
   // Display bill if found
   if (billData) {
     // Parse currency values and calculate total
@@ -2660,12 +2672,12 @@ function ServiceFormScreen({ config, onClose }) {
       const str = String(val).replace(/[^\d.]/g, '');
       return parseFloat(str) || 0;
     };
-    
+
     const waterFee = parseAmount(billData['Water Fee'] || billData['water_fee'] || billData['WaterFee']);
     const installFee = parseAmount(billData['Installation Fee'] || billData['installation_fee'] || billData['InstallationFee']);
     const meterMaint = parseAmount(billData['Meter Maintenance'] || billData['meter_maintenance'] || billData['MeterMaintenance']);
     const total = (waterFee + installFee + meterMaint).toFixed(2);
-    
+
     return (
       <div className="fixed inset-0 z-[200] bg-gray-100 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
         <div className="min-h-full flex flex-col max-w-sm mx-auto w-full">
@@ -2685,7 +2697,7 @@ function ServiceFormScreen({ config, onClose }) {
           {/* Content - Receipt Style */}
           <div className="flex-1 px-4 py-6">
             {/* Receipt Paper */}
-            <div 
+            <div
               className="mx-auto w-full max-w-2xl rounded-sm shadow-lg p-6 border border-yellow-100 font-mono text-sm text-center"
               style={{
                 backgroundImage: `
@@ -2747,16 +2759,16 @@ function ServiceFormScreen({ config, onClose }) {
               {/* Footer */}
               <div className="pt-3 border-t-2 border-dashed border-gray-400 text-xs text-gray-600">
                 <p>Thank you for paying on time</p>
-                
+
                 {/* Barcode */}
                 <div className="mt-4 flex justify-center">
                   <svg ref={barcodeRef}></svg>
                 </div>
               </div>
             </div>
-            
+
             <div className="flex gap-3 pt-6 pb-6">
-              <button onClick={() => { setBillData(null); }} 
+              <button onClick={() => { setBillData(null); }}
                 className="flex-1 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm py-3 rounded-lg transition-colors">
                 Back to Form
               </button>
@@ -2793,112 +2805,112 @@ function ServiceFormScreen({ config, onClose }) {
             <p className="text-sm text-gray-500 mb-6 leading-relaxed">{config.desc}</p>
           )}
 
-        {leakReportSubmitted ? (
-          <div className="flex flex-col items-center justify-center text-center space-y-4 py-12">
-            <div className="bg-green-600 rounded-full p-4 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xl font-bold text-blue-900">Leak Report Submitted</p>
-              <p className="text-sm text-gray-500 mt-2">Thank you! Our team has been notified.</p>
-            </div>
-            <div className="bg-gray-100 rounded-lg p-4 w-full mt-2 border-2 border-dashed border-blue-900">
-              <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Your Ticket Number</p>
-              <p className="text-2xl font-bold text-blue-900 font-mono">{ticketNumber}</p>
-              <p className="text-xs text-gray-500 mt-2">Please keep this number for your records</p>
-            </div>
-            <button onClick={onClose} className="mt-6 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors w-full">
-              Back to Services
-            </button>
-          </div>
-        ) : waterIssueSubmitted ? (
-          <div className="flex flex-col items-center justify-center text-center space-y-4 py-12">
-            <div className="bg-blue-600 rounded-full p-4 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xl font-bold text-blue-900">Water Issue Report Submitted</p>
-              <p className="text-sm text-gray-500 mt-2">Thank you! Our team has been notified and will address this shortly.</p>
-            </div>
-            <div className="bg-gray-100 rounded-lg p-4 w-full mt-2 border-2 border-dashed border-blue-900">
-              <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Your Ticket Number</p>
-              <p className="text-2xl font-bold text-blue-900 font-mono">{waterIssueTicketNumber}</p>
-              <p className="text-xs text-gray-500 mt-2">Please keep this number for your records</p>
-            </div>
-            <button onClick={onClose} className="mt-6 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors w-full">
-              Back to Services
-            </button>
-          </div>
-        ) : success ? (
-          <div className="flex flex-col items-center justify-center text-center space-y-3 py-12">
-            <div className="bg-blue-900 rounded-full p-4 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <p className="text-xl font-bold text-blue-900">Request Submitted</p>
-            <p className="text-sm text-gray-500">Your request has been recorded and forwarded to our team.</p>
-            <button onClick={onClose} className="mt-4 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors">
-              Back to Services
-            </button>
-          </div>
-        ) : billNotFound ? (
-          <div className="flex flex-col items-center justify-center text-center space-y-3 py-12">
-            <div className="bg-orange-100 rounded-full p-4 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4v2m0-10a9 9 0 110 18 9 9 0 010-18z" />
-              </svg>
-            </div>
-            <p className="text-xl font-bold text-orange-600">Bill Not Found</p>
-            <p className="text-sm text-gray-500">No bill record found for Conscode: <span className="font-semibold">{form.conscode}</span></p>
-            <button onClick={() => { setBillNotFound(false); setForm(Object.fromEntries(config.fields.map(f => [f.key, '']))); }} className="mt-4 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors">
-              Try Again
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {config.fields.map(f => (
-              <div key={f.key}>
-                <label className={labelCls}>
-                  {f.label}{f.required && <span className="text-red-500 ml-0.5">*</span>}
-                </label>
-                {f.type === 'textarea' ? (
-                  <textarea rows={3} required={f.required} value={form[f.key]}
-                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                    className={inputCls} />
-                ) : f.type === 'select' ? (
-                  <select required={f.required} value={form[f.key]}
-                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                    className={inputCls}>
-                    <option value="">— Select —</option>
-                    {f.options.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                ) : f.type === 'map' ? (
-                  <LocationPicker value={form[f.key]} onChange={v => setForm(p => ({ ...p, [f.key]: v }))} />
-                ) : (
-                  <input type={f.type} required={f.required} value={form[f.key]}
-                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                    className={inputCls} />
-                )}
+          {leakReportSubmitted ? (
+            <div className="flex flex-col items-center justify-center text-center space-y-4 py-12">
+              <div className="bg-green-600 rounded-full p-4 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-            ))}
-            {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
-            <div className="flex gap-3 pt-2 pb-6">
-              <button type="submit" disabled={submitting}
-                className="flex-1 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-semibold text-sm py-3 rounded-lg transition-colors">
-                {submitting ? 'Searching…' : 'Submit Request'}
-              </button>
-              <button type="button" onClick={onClose}
-                className="flex-1 border border-gray-300 text-gray-600 font-semibold text-sm py-3 rounded-lg hover:bg-gray-100 transition-colors">
-                Cancel
+              <div>
+                <p className="text-xl font-bold text-blue-900">Leak Report Submitted</p>
+                <p className="text-sm text-gray-500 mt-2">Thank you! Our team has been notified.</p>
+              </div>
+              <div className="bg-gray-100 rounded-lg p-4 w-full mt-2 border-2 border-dashed border-blue-900">
+                <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Your Ticket Number</p>
+                <p className="text-2xl font-bold text-blue-900 font-mono">{ticketNumber}</p>
+                <p className="text-xs text-gray-500 mt-2">Please keep this number for your records</p>
+              </div>
+              <button onClick={onClose} className="mt-6 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors w-full">
+                Back to Services
               </button>
             </div>
-          </form>
-        )}
+          ) : waterIssueSubmitted ? (
+            <div className="flex flex-col items-center justify-center text-center space-y-4 py-12">
+              <div className="bg-blue-600 rounded-full p-4 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-blue-900">Water Issue Report Submitted</p>
+                <p className="text-sm text-gray-500 mt-2">Thank you! Our team has been notified and will address this shortly.</p>
+              </div>
+              <div className="bg-gray-100 rounded-lg p-4 w-full mt-2 border-2 border-dashed border-blue-900">
+                <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Your Ticket Number</p>
+                <p className="text-2xl font-bold text-blue-900 font-mono">{waterIssueTicketNumber}</p>
+                <p className="text-xs text-gray-500 mt-2">Please keep this number for your records</p>
+              </div>
+              <button onClick={onClose} className="mt-6 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors w-full">
+                Back to Services
+              </button>
+            </div>
+          ) : success ? (
+            <div className="flex flex-col items-center justify-center text-center space-y-3 py-12">
+              <div className="bg-blue-900 rounded-full p-4 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-xl font-bold text-blue-900">Request Submitted</p>
+              <p className="text-sm text-gray-500">Your request has been recorded and forwarded to our team.</p>
+              <button onClick={onClose} className="mt-4 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors">
+                Back to Services
+              </button>
+            </div>
+          ) : billNotFound ? (
+            <div className="flex flex-col items-center justify-center text-center space-y-3 py-12">
+              <div className="bg-orange-100 rounded-full p-4 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4v2m0-10a9 9 0 110 18 9 9 0 010-18z" />
+                </svg>
+              </div>
+              <p className="text-xl font-bold text-orange-600">Bill Not Found</p>
+              <p className="text-sm text-gray-500">No bill record found for Conscode: <span className="font-semibold">{form.conscode}</span></p>
+              <button onClick={() => { setBillNotFound(false); setForm(Object.fromEntries(config.fields.map(f => [f.key, '']))); }} className="mt-4 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm px-8 py-2.5 rounded-lg transition-colors">
+                Try Again
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {config.fields.map(f => (
+                <div key={f.key}>
+                  <label className={labelCls}>
+                    {f.label}{f.required && <span className="text-red-500 ml-0.5">*</span>}
+                  </label>
+                  {f.type === 'textarea' ? (
+                    <textarea rows={3} required={f.required} value={form[f.key]}
+                      onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className={inputCls} />
+                  ) : f.type === 'select' ? (
+                    <select required={f.required} value={form[f.key]}
+                      onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className={inputCls}>
+                      <option value="">— Select —</option>
+                      {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  ) : f.type === 'map' ? (
+                    <LocationPicker value={form[f.key]} onChange={v => setForm(p => ({ ...p, [f.key]: v }))} />
+                  ) : (
+                    <input type={f.type} required={f.required} value={form[f.key]}
+                      onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className={inputCls} />
+                  )}
+                </div>
+              ))}
+              {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+              <div className="flex gap-3 pt-2 pb-6">
+                <button type="submit" disabled={submitting}
+                  className="flex-1 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-semibold text-sm py-3 rounded-lg transition-colors">
+                  {submitting ? 'Searching…' : 'Submit Request'}
+                </button>
+                <button type="button" onClick={onClose}
+                  className="flex-1 border border-gray-300 text-gray-600 font-semibold text-sm py-3 rounded-lg hover:bg-gray-100 transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>
@@ -2940,12 +2952,12 @@ function ServiceDashboardContent() {
 const contentMap = {
   dashboard: DashboardContent,
   consumers: ConsumersContent,
-  bills:     BillsContent,
-  tools:     ToolsContent,
-  logs:      LogsContent,
-  users:     UsersContent,
-  chatbot:   ChatBotContent,
-  service:   ServiceDashboardContent,
+  bills: BillsContent,
+  tools: ToolsContent,
+  logs: LogsContent,
+  users: UsersContent,
+  chatbot: ChatBotContent,
+  service: ServiceDashboardContent,
 };
 
 export default function SMSBlastPage({ employee, authToken, onMenuChange }) {

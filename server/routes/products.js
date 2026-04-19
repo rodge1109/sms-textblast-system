@@ -3,22 +3,50 @@ import pool from '../config/database.js';
 
 const router = express.Router();
 
+async function resolveCompanyId(req) {
+  const explicit =
+    req.headers['x-company-id'] ??
+    req.query.company_id ??
+    req.body?.company_id ??
+    process.env.DEFAULT_COMPANY_ID ??
+    null;
+
+  if (explicit !== null && explicit !== undefined && String(explicit).trim()) {
+    return String(explicit).trim();
+  }
+
+  const fallback = await pool.query(
+    'SELECT id::text AS id FROM companies ORDER BY id LIMIT 1'
+  );
+  return fallback.rows[0]?.id || null;
+}
+
 // GET all products with sizes
 // Use ?all=true to include inactive products (for management)
 router.get('/', async (req, res) => {
   try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Valid company_id is required' });
+    }
     const { all } = req.query;
 
     // Get products (filter by active unless ?all=true)
     const productsResult = await pool.query(
       all === 'true'
-        ? 'SELECT * FROM products ORDER BY category, name'
-        : 'SELECT * FROM products WHERE active = true ORDER BY category, name'
+        ? 'SELECT * FROM products WHERE company_id = $1 ORDER BY category, name'
+        : 'SELECT * FROM products WHERE company_id = $1 AND active = true ORDER BY category, name',
+      [companyId]
     );
 
     // Get all sizes
     const sizesResult = await pool.query(
-      'SELECT * FROM product_sizes ORDER BY product_id, price'
+      `SELECT ps.*
+       FROM product_sizes ps
+       JOIN products p ON p.id = ps.product_id
+       WHERE p.company_id = $1
+       ORDER BY ps.product_id, ps.price`,
+      [companyId]
     );
 
     // Map sizes to products
@@ -59,11 +87,15 @@ router.get('/', async (req, res) => {
 // GET product by barcode
 router.get('/barcode/:barcode', async (req, res) => {
   try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Valid company_id is required' });
+    }
     const { barcode } = req.params;
 
     const productResult = await pool.query(
-      'SELECT * FROM products WHERE barcode = $1',
-      [barcode]
+      'SELECT * FROM products WHERE barcode = $1 AND company_id = $2',
+      [barcode, companyId]
     );
 
     if (productResult.rows.length === 0) {
@@ -104,11 +136,15 @@ router.get('/barcode/:barcode', async (req, res) => {
 // GET single product
 router.get('/:id', async (req, res) => {
   try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Valid company_id is required' });
+    }
     const { id } = req.params;
 
     const productResult = await pool.query(
-      'SELECT * FROM products WHERE id = $1',
-      [id]
+      'SELECT * FROM products WHERE id = $1 AND company_id = $2',
+      [id, companyId]
     );
 
     if (productResult.rows.length === 0) {
@@ -149,14 +185,18 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const client = await pool.connect();
   try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Valid company_id is required' });
+    }
     const { name, category, price, sizes, description, image, popular, barcode, active, stock_quantity, low_stock_threshold } = req.body;
 
     await client.query('BEGIN');
 
     const productResult = await client.query(
-      `INSERT INTO products (name, category, price, description, image, popular, barcode, active, stock_quantity, low_stock_threshold)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [name, category, price || null, description, image, popular || false, barcode || null, active !== false, stock_quantity || 0, low_stock_threshold || 10]
+      `INSERT INTO products (name, category, price, description, image, popular, barcode, active, stock_quantity, low_stock_threshold, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [name, category, price || null, description, image, popular || false, barcode || null, active !== false, stock_quantity || 0, low_stock_threshold || 10, companyId]
     );
 
     const product = productResult.rows[0];
@@ -187,6 +227,10 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const client = await pool.connect();
   try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Valid company_id is required' });
+    }
     const { id } = req.params;
     const { name, category, price, sizes, description, image, popular, barcode, active, stock_quantity, low_stock_threshold } = req.body;
 
@@ -195,8 +239,8 @@ router.put('/:id', async (req, res) => {
     const productResult = await client.query(
       `UPDATE products
        SET name = $1, category = $2, price = $3, description = $4, image = $5, popular = $6, barcode = $7, active = $8, stock_quantity = $9, low_stock_threshold = $10, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $11 RETURNING *`,
-      [name, category, price || null, description, image, popular || false, barcode || null, active !== false, stock_quantity || 0, low_stock_threshold || 10, id]
+       WHERE id = $11 AND company_id = $12 RETURNING *`,
+      [name, category, price || null, description, image, popular || false, barcode || null, active !== false, stock_quantity || 0, low_stock_threshold || 10, id, companyId]
     );
 
     if (productResult.rows.length === 0) {
@@ -231,11 +275,15 @@ router.put('/:id', async (req, res) => {
 // DELETE product
 router.delete('/:id', async (req, res) => {
   try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Valid company_id is required' });
+    }
     const { id } = req.params;
 
     const result = await pool.query(
-      'DELETE FROM products WHERE id = $1 RETURNING *',
-      [id]
+      'DELETE FROM products WHERE id = $1 AND company_id = $2 RETURNING *',
+      [id, companyId]
     );
 
     if (result.rows.length === 0) {
@@ -252,8 +300,13 @@ router.delete('/:id', async (req, res) => {
 // GET low stock products
 router.get('/inventory/low-stock', async (req, res) => {
   try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Valid company_id is required' });
+    }
     const result = await pool.query(
-      'SELECT * FROM products WHERE stock_quantity <= low_stock_threshold AND active = true ORDER BY stock_quantity ASC'
+      'SELECT * FROM products WHERE company_id = $1 AND stock_quantity <= low_stock_threshold AND active = true ORDER BY stock_quantity ASC',
+      [companyId]
     );
 
     const products = result.rows.map(product => ({
@@ -274,14 +327,18 @@ router.get('/inventory/low-stock', async (req, res) => {
 // POST adjust stock (add or subtract)
 router.post('/:id/stock', async (req, res) => {
   try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Valid company_id is required' });
+    }
     const { id } = req.params;
     const { adjustment, reason } = req.body;
 
     const result = await pool.query(
       `UPDATE products
        SET stock_quantity = GREATEST(0, stock_quantity + $1), updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2 RETURNING *`,
-      [adjustment, id]
+       WHERE id = $2 AND company_id = $3 RETURNING *`,
+      [adjustment, id, companyId]
     );
 
     if (result.rows.length === 0) {

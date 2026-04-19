@@ -44,6 +44,8 @@ const API_URL = import.meta.env.VITE_API_URL ||
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : `${window.location.origin}/api`);
+const COMPANY_ID = String(import.meta.env.VITE_COMPANY_ID || '').trim();
+const getCompanyHeaders = () => (COMPANY_ID ? { 'x-company-id': COMPANY_ID } : {});
 
 // Fallback Menu Data (used if Google Sheets fetch fails)
 const fallbackMenuData = [
@@ -74,7 +76,7 @@ const fallbackMenuData = [
   { id: 20, name: 'Tiramisu', category: 'Desserts', price: 7.49, image: 'assets/images/food/pepperoni.png', description: 'Italian coffee-flavored dessert', popular: true },
 ];
 
-const categories = ['All', 'Combos', 'Pizza', 'Burgers', 'Pasta', 'Salads', 'Drinks', 'Desserts'];
+const DEFAULT_PRODUCT_CATEGORIES = ['Pizza', 'Burgers', 'Pasta', 'Salads', 'Drinks', 'Desserts'];
 
 // Splash Screen Component
 function SplashScreen({ visible }) {
@@ -141,6 +143,8 @@ export default function RestaurantApp() {
   const [menuData, setMenuData] = useState(fallbackMenuData);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [productsError, setProductsError] = useState(null);
+  const [productCategories, setProductCategories] = useState(DEFAULT_PRODUCT_CATEGORIES);
+  const categories = ['All', 'Combos', ...productCategories];
 
   // Customer state
   const [customer, setCustomer] = useState(() => {
@@ -332,6 +336,35 @@ export default function RestaurantApp() {
     }
   };
 
+  const fallbackCategories = () => {
+    const fromFallbackProducts = [...new Set(fallbackMenuData.map(item => item.category).filter(Boolean))];
+    return fromFallbackProducts.length > 0 ? fromFallbackProducts : DEFAULT_PRODUCT_CATEGORIES;
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${API_URL}/categories`, {
+        headers: getCompanyHeaders()
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Failed to fetch categories');
+
+      const names = (data.categories || [])
+        .map(c => c.name?.trim())
+        .filter(Boolean);
+      const uniqueNames = [...new Set(names)];
+
+      if (uniqueNames.length > 0) {
+        setProductCategories(uniqueNames);
+      } else {
+        setProductCategories(fallbackCategories());
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setProductCategories(fallbackCategories());
+    }
+  };
+
   // Fetch products function (extracted so it can be called from child components)
   const fetchProducts = async () => {
     try {
@@ -340,8 +373,8 @@ export default function RestaurantApp() {
 
       // Fetch both products and combos (with ?all=true to include inactive for management)
       const [productsResponse, combosResponse] = await Promise.all([
-        fetch(`${API_URL}/products?all=true`),
-        fetch(`${API_URL}/combos`)
+        fetch(`${API_URL}/products?all=true`, { headers: getCompanyHeaders() }),
+        fetch(`${API_URL}/combos`, { headers: getCompanyHeaders() })
       ]);
 
       const productsData = await productsResponse.json();
@@ -405,6 +438,7 @@ export default function RestaurantApp() {
   // Fetch products from PostgreSQL API on mount
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   // Initialize OneSignal Push Notifications
@@ -667,6 +701,7 @@ export default function RestaurantApp() {
             onLogout={handleLogout}
             employee={employee}
             onEmployeeLogout={handleEmployeeLogout}
+            companyId={COMPANY_ID}
           />
           {/* ── Blue sub-header bar (smsblast + logged in only) ── */}
           {currentPage === 'smsblast' && employee && (
@@ -690,6 +725,7 @@ export default function RestaurantApp() {
             searchQuery={searchQuery}
             menuData={menuData}
             isLoading={isLoadingProducts}
+            categories={categories}
           />
         )}
         {currentPage === 'cart' && <CartPage setCurrentPage={setCurrentPage} />}
@@ -702,6 +738,7 @@ export default function RestaurantApp() {
               <POSPage
                 menuData={menuData}
                 isLoading={isLoadingProducts}
+                categories={categories}
                 currentShift={currentShift}
                 onEndShift={() => setShowShiftEndModal(true)}
                 onStartShift={() => setShowShiftStartModal(true)}
@@ -741,9 +778,27 @@ export default function RestaurantApp() {
         {currentPage === 'products' && (
           employee ? (
             ['admin', 'manager'].includes(employee.role) ? (
-              <ProductManagementPage menuData={menuData} refreshProducts={fetchProducts} />
+              <ProductManagementPage
+                menuData={menuData}
+                refreshProducts={fetchProducts}
+                productCategories={productCategories}
+              />
             ) : (
               <AccessDeniedPage message="Only managers and administrators can access Product Management." onBack={() => setCurrentPage('pos')} />
+            )
+          ) : (
+            <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
+          )
+        )}
+        {currentPage === 'menu-categories' && (
+          employee ? (
+            ['admin', 'manager'].includes(employee.role) ? (
+              <MenuCategoriesPage
+                onCategoriesUpdated={fetchCategories}
+                companyId={COMPANY_ID}
+              />
+            ) : (
+              <AccessDeniedPage message="Only managers and administrators can access Categories." onBack={() => setCurrentPage('pos')} />
             )
           ) : (
             <EmployeeLoginPage onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
@@ -932,7 +987,7 @@ function SizeModal({ product, onClose, onSelectSize }) {
 }
 
 // Header Component
-function Header({ currentPage, setCurrentPage, setShowCart, searchQuery, setSearchQuery, customer, onLogout, employee, onEmployeeLogout }) {
+function Header({ currentPage, setCurrentPage, setShowCart, searchQuery, setSearchQuery, customer, onLogout, employee, onEmployeeLogout, companyId }) {
   const { getTotalItems } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -1006,6 +1061,14 @@ function Header({ currentPage, setCurrentPage, setShowCart, searchQuery, setSear
 
 
             <div className="flex items-center space-x-3">
+              <div
+                className="flex items-center bg-gray-800 text-gray-100 px-2 py-1 rounded-md text-[10px] md:text-[11px] font-mono border border-gray-700 max-w-[180px] md:max-w-[240px]"
+                title={companyId || 'No company ID configured'}
+              >
+                <span className="text-gray-300 mr-1">CID:</span>
+                <span className="truncate">{companyId || 'not-set'}</span>
+              </div>
+
               {/* User Profile Dropdown - Top Right */}
               {employee && (
                 <div className="relative group">
@@ -1568,7 +1631,7 @@ function PopularItemCard({ item }) {
 }
 
 // Menu Page
-function MenuPage({ selectedCategory, setSelectedCategory, searchQuery, menuData, isLoading }) {
+function MenuPage({ selectedCategory, setSelectedCategory, searchQuery, menuData, isLoading, categories }) {
   const filteredItems = menuData.filter(item => {
     const isActive = item.active !== false;
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
@@ -2670,6 +2733,7 @@ function EmployeeLoginPage({ onLogin, onBack }) {
     </div>
   );
 }
+
 // Shift Start Modal
 function ShiftStartModal({ onStart, onCancel, employee }) {
   const [openingCash, setOpeningCash] = useState('');
@@ -2971,7 +3035,7 @@ function ShiftReportModal({ report, onClose }) {
 }
 
 // POS (Point of Sale) Page
-function POSPage({ menuData, isLoading, currentShift, onEndShift, onStartShift, onRefreshShift }) {
+function POSPage({ menuData, isLoading, categories, currentShift, onEndShift, onStartShift, onRefreshShift }) {
   const { cartItems, addToCart, removeFromCart, updateQuantity, setItemNotes, getTotalPrice, clearCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -3473,7 +3537,9 @@ function POSPage({ menuData, isLoading, currentShift, onEndShift, onStartShift, 
   // Lookup product by barcode and add to cart
   const lookupBarcode = async (barcode) => {
     try {
-      const response = await fetch(`${API_URL}/products/barcode/${barcode}`);
+      const response = await fetch(`${API_URL}/products/barcode/${barcode}`, {
+        headers: getCompanyHeaders()
+      });
       const result = await response.json();
 
       if (result.success && result.product) {
@@ -4699,8 +4765,119 @@ function POSPage({ menuData, isLoading, currentShift, onEndShift, onStartShift, 
   );
 }
 
+function MenuCategoriesPage({ onCategoriesUpdated, companyId }) {
+  const [categories, setCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const categoryHeaders = companyId ? { 'x-company-id': companyId } : {};
+
+  const fetchCategoryList = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const response = await fetch(`${API_URL}/categories`, {
+        headers: categoryHeaders
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Failed to fetch categories');
+      setCategories(data.categories || []);
+    } catch (err) {
+      console.error('Error loading categories:', err);
+      setError('Failed to load categories.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategoryList();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    const name = newCategory.trim();
+    if (!name) return;
+
+    try {
+      setIsSaving(true);
+      setError('');
+      const response = await fetch(`${API_URL}/categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...categoryHeaders
+        },
+        body: JSON.stringify({ name })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Failed to add category');
+
+      setNewCategory('');
+      await fetchCategoryList();
+      if (onCategoriesUpdated) await onCategoriesUpdated();
+    } catch (err) {
+      console.error('Error adding category:', err);
+      setError(err.message || 'Failed to add category.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-gray-100 min-h-screen pt-24 pb-20 md:pb-8">
+      <div className="max-w-4xl mx-auto px-4 space-y-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
+          <h1 className="text-2xl font-bold text-gray-800">Menu Categories</h1>
+          <p className="text-sm text-gray-500 mt-1">Create categories for company: {companyId || 'default'}.</p>
+        </div>
+
+        <form onSubmit={handleAddCategory} className="bg-white rounded-lg shadow-sm p-4 md:p-6 flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+            placeholder="New category name"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+            required
+          />
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-60"
+          >
+            {isSaving ? 'Saving...' : 'Add Category'}
+          </button>
+        </form>
+
+        {error && (
+          <div className="bg-red-50 text-red-700 rounded-lg p-3 text-sm">{error}</div>
+        )}
+
+        <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">Current Categories</h2>
+          {isLoading ? (
+            <p className="text-gray-500">Loading categories...</p>
+          ) : categories.length === 0 ? (
+            <p className="text-gray-500">No categories yet.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <span key={cat.id} className="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">
+                  {cat.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Product Management Page
-function ProductManagementPage({ menuData, refreshProducts }) {
+function ProductManagementPage({ menuData, refreshProducts, productCategories }) {
   const [activeTab, setActiveTab] = useState('products'); // 'products' or 'combos'
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -4708,7 +4885,7 @@ function ProductManagementPage({ menuData, refreshProducts }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Pizza',
+    category: productCategories[0] || '',
     price: '',
     description: '',
     image: '',
@@ -4738,7 +4915,9 @@ function ProductManagementPage({ menuData, refreshProducts }) {
   // Fetch combos (with ?all=true to include inactive for management)
   const fetchCombos = async () => {
     try {
-      const response = await fetch(`${API_URL}/combos?all=true`);
+      const response = await fetch(`${API_URL}/combos?all=true`, {
+        headers: getCompanyHeaders()
+      });
       const data = await response.json();
       if (data.success) {
         setCombos(data.combos);
@@ -4751,6 +4930,12 @@ function ProductManagementPage({ menuData, refreshProducts }) {
   useEffect(() => {
     fetchCombos();
   }, []);
+
+  useEffect(() => {
+    if (!formData.category && productCategories.length > 0) {
+      setFormData(prev => ({ ...prev, category: productCategories[0] }));
+    }
+  }, [productCategories, formData.category]);
 
   // Calculate low stock count from products
   useEffect(() => {
@@ -4819,7 +5004,10 @@ function ProductManagementPage({ menuData, refreshProducts }) {
 
       const response = await fetch(url, {
         method: editingCombo ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getCompanyHeaders()
+        },
         body: JSON.stringify(payload)
       });
 
@@ -4844,7 +5032,8 @@ function ProductManagementPage({ menuData, refreshProducts }) {
 
     try {
       const response = await fetch(`${API_URL}/combos/${combo.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getCompanyHeaders()
       });
       const result = await response.json();
 
@@ -4888,7 +5077,7 @@ function ProductManagementPage({ menuData, refreshProducts }) {
     setEditingProduct(null);
     setFormData({
       name: '',
-      category: 'Pizza',
+      category: productCategories[0] || '',
       price: '',
       description: '',
       image: '',
@@ -4946,7 +5135,10 @@ function ProductManagementPage({ menuData, refreshProducts }) {
 
       const response = await fetch(url, {
         method: editingProduct ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getCompanyHeaders()
+        },
         body: JSON.stringify(payload)
       });
 
@@ -4970,7 +5162,8 @@ function ProductManagementPage({ menuData, refreshProducts }) {
 
     try {
       const response = await fetch(`${API_URL}/products/${product.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getCompanyHeaders()
       });
       const result = await response.json();
 
@@ -5074,7 +5267,7 @@ function ProductManagementPage({ menuData, refreshProducts }) {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
               >
-                {categories.filter(c => c !== 'Combos').map(cat => (
+                {['All', ...productCategories].map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
@@ -5312,7 +5505,7 @@ function ProductManagementPage({ menuData, refreshProducts }) {
                   onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
                 >
-                  {categories.filter(c => c !== 'All').map(cat => (
+                  {productCategories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
@@ -6027,7 +6220,7 @@ function DashboardPage({ setCurrentPage, employee }) {
       const [todayOrdersRes, weekOrdersRes, productsRes] = await Promise.all([
         fetch(`${API_URL}/orders?start=${todayStr}&end=${todayStr}`),
         fetch(`${API_URL}/orders?start=${weekAgoStr}&end=${todayStr}`),
-        fetch(`${API_URL}/products`)
+        fetch(`${API_URL}/products`, { headers: getCompanyHeaders() })
       ]);
 
       const todayOrdersData = await todayOrdersRes.json();
@@ -6868,7 +7061,10 @@ function InventoryPage({ currentView, setCurrentPage, menuData, refreshProducts 
     try {
       await fetch(`${API_URL}/products/${productId}/stock`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getCompanyHeaders()
+        },
         body: JSON.stringify({ adjustment })
       });
       refreshProducts();

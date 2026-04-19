@@ -4,6 +4,7 @@
 -- Products Table
 CREATE TABLE IF NOT EXISTS products (
   id SERIAL PRIMARY KEY,
+  company_id UUID,
   name VARCHAR(255) NOT NULL,
   category VARCHAR(100) NOT NULL,
   price DECIMAL(10,2),
@@ -97,6 +98,7 @@ CREATE TABLE IF NOT EXISTS order_items (
 -- Combos Table (meal deals / combo items)
 CREATE TABLE IF NOT EXISTS combos (
   id SERIAL PRIMARY KEY,
+  company_id UUID,
   name VARCHAR(255) NOT NULL,
   description TEXT,
   price DECIMAL(10,2) NOT NULL,
@@ -113,6 +115,14 @@ CREATE TABLE IF NOT EXISTS combo_items (
   product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
   quantity INTEGER DEFAULT 1,
   size_name VARCHAR(50)
+);
+
+-- Categories table (multi-tenant)
+CREATE TABLE IF NOT EXISTS categories (
+  id SERIAL PRIMARY KEY,
+  company_id UUID,
+  name VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Order Item Adjustments Table (void/comp tracking)
@@ -140,6 +150,9 @@ CREATE TABLE IF NOT EXISTS order_payments (
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_combo_items_combo_id ON combo_items(combo_id);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_company_id ON products(company_id);
+CREATE INDEX IF NOT EXISTS idx_combos_company_id ON combos(company_id);
+CREATE INDEX IF NOT EXISTS idx_categories_company_id ON categories(company_id);
 CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);
 CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);

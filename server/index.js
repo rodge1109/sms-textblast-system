@@ -26,6 +26,7 @@ import templatesRoutes from './routes/templates.js';
 import logsRoutes from './routes/logs.js';
 import chatbotRoutes from './routes/chatbot.js';
 import sheetsRoutes from './routes/sheets.js';
+import categoriesRoutes from './routes/categories.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,6 +112,7 @@ app.use('/api/templates', templatesRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/sheets', sheetsRoutes);
+app.use('/api/categories', categoriesRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
