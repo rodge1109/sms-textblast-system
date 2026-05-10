@@ -1141,7 +1141,7 @@ function ToolsContent() {
     setMonthlyBillAddStatus(null);
     setBillsPreview(null);
     try {
-      const BILL_COLS = ['Conscode', 'Consumption', 'Water Fee', 'Installation', 'Meter Maintenance'];
+      const BILL_COLS = ['Conscode', 'Consumption', 'Water Fee', 'Installation Fee', 'Meter Maintenance'];
 
       // Parse all selected files and combine rows
       const bills = [];
@@ -1183,6 +1183,9 @@ function ToolsContent() {
         });
         const sheetData = await sheetRes.json();
         if (!sheetRes.ok || !sheetData.success) {
+          if (sheetData.existingHeaders && sheetData.uploadedHeaders) {
+            throw new Error(`Header mismatch in LatestBill.\nExpected (uploaded): ${sheetData.uploadedHeaders.join(', ')}\nFound in Sheet: ${sheetData.existingHeaders.join(', ')}\nPlease update or clear the Google Sheet to match.`);
+          }
           throw new Error(sheetData.error || 'Failed to append to LatestBill in Google Sheets.');
         }
 
@@ -1279,7 +1282,7 @@ function ToolsContent() {
           results.push({ code, phone, sms, status: phone ? 'ready' : 'no_phone' });
         }
       } else {
-        const BROADCAST_COLS = ['Conscode', 'Water Fee', 'Installation', 'Meter Maintenance'];
+        const BROADCAST_COLS = ['Conscode', 'Water Fee', 'Installation Fee', 'Meter Maintenance'];
         const rawText = await readFile(broadcastFile);
         const rawLines = rawText.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
           .trim().split('\n').filter(l => l.trim());
